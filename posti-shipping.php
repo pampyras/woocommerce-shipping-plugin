@@ -33,6 +33,7 @@ if ( ! class_exists('\Pakettikauppa\Client') ) {
 }
 
 require_once 'core/class-core.php';
+require_once 'core/warehouse/loader.php';
 
 class Woo_Posti_Shipping extends Woo_Pakettikauppa_Core\Core {
   public $prefix = 'woo_posti_shipping';
@@ -166,4 +167,3 @@ $instance = new Woo_Posti_Shipping(
     // 'pakettikauppa_api_comment' => 'From WooCommerce', // Overrides default
   ]
 );
-

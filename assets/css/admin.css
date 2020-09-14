@@ -72,6 +72,17 @@ select.pakettikauppa_metabox_values {
   /* max-width: 250px; */
 }
 
+#woocommerce-product-data ul.wc-tabs li.posti-tab_options a:before { 
+    content: ' '; 
+    background: url('../img/posti-logo-letter.png') center center no-repeat;
+    display: block;
+    float: left;
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    line-height: 20px;
+}
+
 @media (min-width: 1200px) {
   .pakettikauppa-notice--setup {
     flex-flow: row nowrap;

@@ -1,0 +1,546 @@
+<?php
+defined('ABSPATH') || exit;
+
+class PostiWarehouse {
+
+    private $store_types = array();
+    private $api = null;
+    private $metabox = null;
+    private $order = null;
+    private $business_id = false;
+
+    public function __construct() {
+        
+        $options = get_option('posti_wh_options');
+        $is_test = false;
+        if (isset($options['posti_wh_field_test_mode'])) {
+            $is_test = true;
+        }
+        if (isset($options['posti_wh_field_business_id'])) {
+            $this->business_id = $options['posti_wh_field_business_id'];
+        }
+
+        $this->store_types = array(
+            'Store' => __('Store', 'woo-pakettikauppa'),
+            'Posti' => __('Posti Warehouse', 'woo-pakettikauppa'),
+                //'Catalog' => __('Drop Shipping', 'woo-pakettikauppa')
+        );
+
+        $this->api = new PostiWarehouseApi($this->business_id, $is_test);
+        
+        
+        
+        $this->order = new PostiOrder($this->api);
+        
+        $this->metabox = new PostiWarehouseMetabox($this->order);
+
+        add_action('admin_init', array($this, 'posti_wh_settings_init'));
+
+
+        add_action('admin_menu', array($this, 'posti_wh_options_page'));
+
+        add_action('admin_enqueue_scripts', array($this, 'posti_wh_admin_styles'));
+
+
+
+        $this->WC_hooks();
+    }
+
+    public function posti_wh_admin_styles($hook) {
+
+        wp_enqueue_style('posti_wh_admin_style', plugins_url('../assets/css/admin-warehouse-settings.css', dirname(__FILE__)));
+        wp_enqueue_script('posti_wh_admin_script', plugins_url('../assets/js/admin-warehouse.js', dirname(__FILE__)));
+        
+    
+    }
+
+    public function posti_wh_settings_init() {
+
+        register_setting('posti_wh', 'posti_wh_options');
+
+        add_settings_section(
+                'posti_wh_settings_section',
+                __('Main settings', 'posti_wh'),
+                array($this, 'posti_wh_section_developers_cb'),
+                'posti_wh'
+        );
+
+        add_settings_field(
+                'posti_wh_field_username',
+                __('Username', 'posti_wh'),
+                array($this, 'posti_wh_field_string_cb'),
+                'posti_wh',
+                'posti_wh_settings_section',
+                [
+                    'label_for' => 'posti_wh_field_username',
+                    'class' => 'posti_wh_row',
+                    'posti_wh_custom_data' => 'custom',
+                ]
+        );
+
+        add_settings_field(
+                'posti_wh_field_password',
+                __('Password', 'posti_wh'),
+                array($this, 'posti_wh_field_string_cb'),
+                'posti_wh',
+                'posti_wh_settings_section',
+                [
+                    'label_for' => 'posti_wh_field_password',
+                    'class' => 'posti_wh_row',
+                    'posti_wh_custom_data' => 'custom',
+                ]
+        );
+
+        add_settings_field(
+                'posti_wh_field_business_id',
+                __('Business id', 'posti_wh'),
+                array($this, 'posti_wh_field_string_cb'),
+                'posti_wh',
+                'posti_wh_settings_section',
+                [
+                    'label_for' => 'posti_wh_field_business_id',
+                    //'default' => 'A',
+                    'class' => 'posti_wh_row',
+                    'posti_wh_custom_data' => 'custom',
+                ]
+        );
+
+        add_settings_field(
+                'posti_wh_field_contract',
+                __('Contract number', 'posti_wh'),
+                array($this, 'posti_wh_field_string_cb'),
+                'posti_wh',
+                'posti_wh_settings_section',
+                [
+                    'label_for' => 'posti_wh_field_contract',
+                    'class' => 'posti_wh_row',
+                    'posti_wh_custom_data' => 'custom',
+                ]
+        );
+
+
+
+        add_settings_field(
+                'posti_wh_field_type',
+                __('Default stock type', 'posti_wh'),
+                array($this, 'posti_wh_field_type_cb'),
+                'posti_wh',
+                'posti_wh_settings_section',
+                [
+                    'label_for' => 'posti_wh_field_type',
+                    'class' => 'posti_wh_row',
+                    'posti_wh_custom_data' => 'custom',
+                ]
+        );
+
+        add_settings_field(
+                'posti_wh_field_autoorder',
+                __('Auto ordering', 'posti_wh'),
+                array($this, 'posti_wh_field_checkbox_cb'),
+                'posti_wh',
+                'posti_wh_settings_section',
+                [
+                    'label_for' => 'posti_wh_field_autoorder',
+                    'class' => 'posti_wh_row',
+                    'posti_wh_custom_data' => 'custom',
+                ]
+        );
+
+        add_settings_field(
+                'posti_wh_field_autocomplete',
+                __('Auto mark orders as "Completed"', 'posti_wh'),
+                array($this, 'posti_wh_field_checkbox_cb'),
+                'posti_wh',
+                'posti_wh_settings_section',
+                [
+                    'label_for' => 'posti_wh_field_autocomplete',
+                    'class' => 'posti_wh_row',
+                    'posti_wh_custom_data' => 'custom',
+                ]
+        );
+        
+        add_settings_field(
+                'posti_wh_field_test_mode',
+                __('Test mode', 'posti_wh'),
+                array($this, 'posti_wh_field_checkbox_cb'),
+                'posti_wh',
+                'posti_wh_settings_section',
+                [
+                    'label_for' => 'posti_wh_field_test_mode',
+                    'class' => 'posti_wh_row',
+                    'posti_wh_custom_data' => 'custom',
+                ]
+        );
+    }
+
+    public function posti_wh_section_developers_cb($args) {
+        
+    }
+
+    public function posti_wh_field_checkbox_cb($args) {
+        $options = get_option('posti_wh_options');
+        $checked = "";
+        if ($options[$args['label_for']]) {
+            $checked = ' checked="checked" ';
+        }
+        ?>
+        <input <?php echo $checked; ?> id = "<?php echo esc_attr($args['label_for']); ?>" name='posti_wh_options[<?php echo esc_attr($args['label_for']); ?>]' type='checkbox' value = "1"/>
+        <?php
+    }
+
+    public function posti_wh_field_string_cb($args) {
+        $options = get_option('posti_wh_options');
+        $value = $options[$args['label_for']];
+        if (!$value && isset($args['default'])) {
+            $value = $args['default'];
+        }
+        ?>
+        <input id="<?php echo esc_attr($args['label_for']); ?>" name="posti_wh_options[<?php echo esc_attr($args['label_for']); ?>]" size='20' type='text' value="<?php echo $value; ?>" />
+        <?php
+    }
+
+    public function posti_wh_field_type_cb($args) {
+
+        $options = get_option('posti_wh_options');
+        ?>
+        <select id="<?php echo esc_attr($args['label_for']); ?>"
+                data-custom="<?php echo esc_attr($args['posti_wh_custom_data']); ?>"
+                name="posti_wh_options[<?php echo esc_attr($args['label_for']); ?>]"
+                >
+                    <?php foreach ($this->store_types as $val => $type): ?>
+                <option value="<?php echo $val; ?>" <?php echo isset($options[$args['label_for']]) ? ( selected($options[$args['label_for']], $val, false) ) : ( '' ); ?>>
+                    <?php
+                    echo $type;
+                    ;
+                    ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <?php
+    }
+
+    public function posti_wh_options_page() {
+        add_submenu_page(
+                'options-general.php',
+                'Posti Settings',
+                'Posti Settings',
+                'manage_options',
+                'posti_wh',
+                array($this, 'posti_wh_options_page_html')
+        );
+    }
+
+    public function posti_wh_options_page_html() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        settings_errors('posti_wh_messages');
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+            <form action="options.php" method="post">
+                <?php
+                settings_fields('posti_wh');
+                do_settings_sections('posti_wh');
+                submit_button('Save');
+                ?>
+            </form>
+        </div>
+        <?php
+    }
+
+    public function WC_hooks() {
+        add_filter('woocommerce_product_data_tabs', array($this, 'posti_wh_product_tab'), 99, 1);
+
+        add_action('woocommerce_product_data_panels', array($this, 'posti_wh_product_tab_fields'));
+
+        add_action('woocommerce_process_product_meta', array($this, 'posti_wh_product_tab_fields_save'));
+
+        add_action('admin_notices', array($this, 'posti_notices'));
+
+        add_action('save_post_product', array($this, 'after_product_save'));
+
+//create cronjob to sync products and get order status
+        add_filter('cron_schedules', array($this, 'posti_interval'));
+
+        add_action('posti_cronjob', array($this, 'posti_cronjob_callback'));
+        if (!wp_next_scheduled('posti_cronjob')) {
+            wp_schedule_event(time(), '30_minutes', 'posti_cronjob');
+        }
+
+//on order sttaus chnage
+        add_action('woocommerce_order_status_changed', array($this, 'posti_check_order'), 10, 3);
+        
+        //upate ajax warehouses
+        add_action('wp_ajax_posti_warehouses', array($this, 'get_ajax_post_warehouse'));
+    }
+
+    public function posti_interval($schedules) {
+        $schedules['30_minutes'] = array(
+            'interval' => 300, //1800,
+            'display' => esc_html__('Every 30 Minutes'),);
+        return $schedules;
+    }
+
+    public function posti_wh_product_tab($product_data_tabs) {
+        $product_data_tabs['posti-tab'] = array(
+            'label' => __('Posti', 'postic'),
+            'target' => 'posti_wh_tab',
+        );
+        return $product_data_tabs;
+    }
+    
+    public function get_ajax_post_warehouse() {
+        
+        if (!isset($_POST['catalog_type'])) {
+            wp_die('', '', 501);
+        }
+        $warehouses = $this->api->getWarehouses();
+        $warehouses_options = array();
+        foreach ($warehouses as $warehouse) {
+                if ($warehouse['catalogType'] !== $_POST['catalog_type']) {
+                    continue;
+                }
+                $warehouses_options[] = array('value' => $warehouse['externalId'], 'name' => $warehouse['externalId'] . ' - ' . $warehouse['catalogName']);
+            }
+        echo json_encode($warehouses_options);
+        die();
+    }
+
+    public function posti_wh_product_tab_fields() {
+        global $woocommerce, $post;
+        ?>
+        <!-- id below must match target registered in above add_my_custom_product_data_tab function -->
+        <div id="posti_wh_tab" class="panel woocommerce_options_panel">
+            <?php
+            $type = get_post_meta($post->ID, '_posti_wh_stock_type', true);
+            $product_warehouse = get_post_meta($post->ID, '_posti_wh_warehouse', true);
+            if (!$type) {
+                $options = get_option('posti_wh_options');
+                if (isset($options['posti_wh_field_type'])) {
+                    $type = $options['posti_wh_field_type'];
+                }
+            }
+
+            $warehouses = $this->api->getWarehouses();
+            $warehouses_options = array();
+            foreach ($warehouses as $warehouse) {
+                if (!$type || $type !== $warehouse['catalogType']) {
+                    continue;
+                }
+                $warehouses_options[$warehouse['externalId']] = $warehouse['externalId'] . ' - ' . $warehouse['catalogName'];
+            }
+            //var_dump($this->api->getProductsByWarehouse($product_warehouse));
+            woocommerce_wp_select(
+                    array(
+                        'id' => '_posti_wh_stock_type',
+                        'label' => __('Stock type', 'woo-pakettikauppa'),
+                        'options' => $this->store_types,
+                        'value' => $type
+                    )
+            );
+
+            woocommerce_wp_select(
+                    array(
+                        'id' => '_posti_wh_warehouse',
+                        'label' => __('Warehouse', 'woo-pakettikauppa'),
+                        'options' => $warehouses_options,
+                        'value' => $product_warehouse
+                    )
+            );
+
+            woocommerce_wp_text_input(
+                    array(
+                        'id' => '_posti_wh_distribution',
+                        'label' => __('Distribution ID', 'woo-pakettikauppa'),
+                        'placeholder' => '',
+                        'type' => 'text',
+                    )
+            );
+            ?>
+        </div>
+        <?php
+    }
+
+    public function posti_wh_product_tab_fields_save($post_id) {
+
+        $this->saveWCField('_posti_wh_stock_type', $post_id);
+        $this->saveWCField('_posti_wh_warehouse', $post_id);
+        $this->saveWCField('_posti_wh_distribution', $post_id);
+    }
+
+    public function after_product_save($post_id) {
+//update product information
+        $type = get_post_meta($post_id, '_posti_wh_stock_type', true);
+        $product_warehouse = get_post_meta($post_id, '_posti_wh_warehouse', true);
+        if ($type == "Posti" && $product_warehouse) {
+            $options = get_option('posti_wh_options');
+            $business_id = false;
+            if (isset($options['posti_wh_field_business_id'])) {
+                $business_id = $options['posti_wh_field_business_id'];
+            }
+            if (!$business_id) {
+                return;
+            }
+            $products = array();
+            $products_ids = array();
+            $_product = wc_get_product($post_id);
+            $type = $_product->get_type();
+            if ($type == 'variable') {
+                $_products = $_product->get_children();
+            } else {
+                $product = array(
+                    'externalId' => $business_id . '-' . $_product->get_sku(),
+                    "supplierId" => $business_id,
+                    'descriptions' => array(
+                        'en' => array(
+                            'name' => $_product->get_name(),
+                            'description' => $_product->get_description()
+                        )
+                    ),
+                    'eanCode' => $_product->get_sku(),
+                    "recommendedRetailPrice" => round(100 * $_product->get_price()),
+                    "currency" => get_woocommerce_currency(),
+                );
+                $balances = array(
+                    array(
+                        "retailerId" => $business_id,
+                        "productExternalId" => $business_id . '-' . $_product->get_sku(),
+                        "catalogExternalId" => $product_warehouse,
+                        //"quantity" => 0.0,
+                        "wholesalePrice" => round(100 * $_product->get_price()),
+                        "currency" => get_woocommerce_currency()
+                    )
+                );
+                $products_ids[$business_id . '-' . $_product->get_sku()] = $_product->get_id();
+                $products[] = array('product' => $product, 'balances' => $balances);
+            }
+            if (count($products)) {
+                $this->api->addProduct($products, $business_id);
+//add 0 to force sync
+                update_post_meta($_product->get_id(), '_posti_last_sync', 0);
+//$this->syncProducts($products_ids);
+            }
+        }
+    }
+
+    private function saveWCField($name, $post_id) {
+        $value = isset($_POST[$name]) ? $_POST[$name] : '';
+        update_post_meta($post_id, $name, $value);
+    }
+
+    public function posti_notices() {
+        $screen = get_current_screen();
+        if (( $screen->id == 'product' ) && ($screen->parent_base == 'edit')) {
+            global $post;
+            $id = $post->ID;
+            $type = get_post_meta($post->ID, '_posti_wh_stock_type', true);
+            $product_warehouse = get_post_meta($post->ID, '_posti_wh_warehouse', true);
+            $last_sync = get_post_meta($post->ID, '_posti_last_sync', true);
+            if ($type == 'Posti' && !$product_warehouse) {
+                $class = 'notice notice-error';
+                $message = __('Posti error: Please select Posti warehouse.', 'woo-pakettikauppa');
+                printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr($class), esc_html($message));
+            } elseif (!$last_sync || $last_sync < (time() - 3600)) {
+                $class = 'notice notice-error';
+                $message = __('Posti error: product sync not active. Please check product SKU, price or try resave.', 'woo-pakettikauppa');
+                printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr($class), esc_html($message));
+            }
+        }
+    }
+
+    private function syncProducts($ids) {
+        foreach ($ids as $id) {
+            $_product = wc_get_product($id);
+            $options = get_option('posti_wh_options');
+            $business_id = false;
+            if (isset($options['posti_wh_field_business_id'])) {
+                $business_id = $options['posti_wh_field_business_id'];
+            }
+            if (!$business_id) {
+                return;
+            }
+            $product_reference = $business_id . '-' . $_product->get_sku();
+//$product_warehouse = get_post_meta($post_id, '_posti_wh_warehouse', true);
+            $product_data = $this->api->getProduct($product_reference);
+            if (is_array($product_data)) {
+                if (isset($product_data['balances']) && is_array($product_data['balances'])) {
+                    $stock = 0;
+                    foreach ($product_data['balances'] as $balance) {
+                        if (isset($balance['quantity'])) {
+                            $stock += $balance['quantity'];
+                        }
+                    }
+                    $_product->set_stock_quantity($stock);
+                    $_product->save();
+                    update_post_meta($_product->get_id(), '_posti_last_sync', time());
+                    /*
+                      $stocks = $product_data['warehouseBalance'];
+                      foreach ($stocks as $stock){
+                      if ($stock['externalWarehouseId'] == $product_warehouse){
+                      $_product = set_stock_quantity(0)
+                      }
+                      }
+                     */
+                }
+            }
+        }
+    }
+
+    /*
+     * Cronjob to sync products and orders
+     */
+
+    public function posti_cronjob_callback() {
+        $args = array(
+            'post_type' => 'product',
+            'meta_query' => array(
+                'relation' => 'AND',
+                array(
+                    'key' => '_posti_wh_stock_type',
+                    'value' => 'Posti',
+                ),
+                array(
+                    'key' => '_posti_last_sync',
+                    'value' => (time() - 3600),
+                    'compare' => '<'
+                ),
+            ),
+        );
+        $products = get_posts($args);
+        if (is_array($products)) {
+            $product_ids = [];
+            foreach ($products as $product) {
+                $product_ids[] = $product->ID;
+            }
+            if (count($product_ids)) {
+                $this->syncProducts($product_ids);
+            }
+        }
+        
+        $this->order->updatePostiOrders();
+    }
+
+    /*
+     * Check all orders that gets status processing, if order has 
+     * posti product, add order to API
+     */
+
+    public function posti_check_order($order_id, $old_status, $new_status) {
+        $posti_order = false;
+        if ($new_status == "processing") {
+            $options = get_option('posti_wh_options');
+            if (isset($options['posti_wh_field_autoorder'])) {
+            //if autoorder on, check if order has posti products
+                $order = wc_get_order($order_id);
+                if ($this->order->hasPostiProducts($order)){
+                    update_post_meta($order_id, '_posti_wh_order', '1');
+                    $this->order->addOrder($order);
+                }
+            }
+        }
+    }
+
+
+}
