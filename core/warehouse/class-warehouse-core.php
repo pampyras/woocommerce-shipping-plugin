@@ -10,11 +10,15 @@ class PostiWarehouse {
     private $business_id = false;
 
     public function __construct() {
-        
+
         $options = get_option('posti_wh_options');
         $is_test = false;
+        $debug = false;
         if (isset($options['posti_wh_field_test_mode'])) {
             $is_test = true;
+        }
+        if (isset($options['posti_wh_field_debug'])) {
+            $debug = true;
         }
         if (isset($options['posti_wh_field_business_id'])) {
             $this->business_id = $options['posti_wh_field_business_id'];
@@ -26,18 +30,24 @@ class PostiWarehouse {
                 //'Catalog' => __('Drop Shipping', 'woo-pakettikauppa')
         );
 
-        $this->api = new PostiWarehouseApi($this->business_id, $is_test);
-        
-        
-        
+        $this->api = new PostiWarehouseApi($this->business_id, $is_test, $debug);
+
+
+
         $this->order = new PostiOrder($this->api);
-        
+
         $this->metabox = new PostiWarehouseMetabox($this->order);
 
         add_action('admin_init', array($this, 'posti_wh_settings_init'));
 
 
+
+
         add_action('admin_menu', array($this, 'posti_wh_options_page'));
+
+        if ($debug) {
+            add_action('admin_menu', array($this, 'posti_wh_debug_page'));
+        }
 
         add_action('admin_enqueue_scripts', array($this, 'posti_wh_admin_styles'));
 
@@ -50,8 +60,37 @@ class PostiWarehouse {
 
         wp_enqueue_style('posti_wh_admin_style', plugins_url('../assets/css/admin-warehouse-settings.css', dirname(__FILE__)));
         wp_enqueue_script('posti_wh_admin_script', plugins_url('../assets/js/admin-warehouse.js', dirname(__FILE__)));
-        
-    
+    }
+
+    public function posti_wh_debug_page() {
+        add_submenu_page(
+                'options-general.php',
+                'Posti debug',
+                'Posti debug',
+                'manage_options',
+                'posti_wh_debug',
+                array($this, 'posti_wh_debug_page_html')
+        );
+    }
+
+    public function posti_wh_debug_page_html() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+            <ul>
+                <?php
+                $debug = get_option('posti_wh_logs', array());
+                $debug = array_reverse($debug);
+                foreach ($debug as $info) {
+                    echo '<li>' . $info . '</li>';
+                }
+                ?>
+            </ul>
+        </div>
+        <?php
     }
 
     public function posti_wh_settings_init() {
@@ -158,7 +197,7 @@ class PostiWarehouse {
                     'posti_wh_custom_data' => 'custom',
                 ]
         );
-        
+
         add_settings_field(
                 'posti_wh_field_test_mode',
                 __('Test mode', 'posti_wh'),
@@ -167,6 +206,19 @@ class PostiWarehouse {
                 'posti_wh_settings_section',
                 [
                     'label_for' => 'posti_wh_field_test_mode',
+                    'class' => 'posti_wh_row',
+                    'posti_wh_custom_data' => 'custom',
+                ]
+        );
+
+        add_settings_field(
+                'posti_wh_field_debug',
+                __('Debug', 'posti_wh'),
+                array($this, 'posti_wh_field_checkbox_cb'),
+                'posti_wh',
+                'posti_wh_settings_section',
+                [
+                    'label_for' => 'posti_wh_field_debug',
                     'class' => 'posti_wh_row',
                     'posti_wh_custom_data' => 'custom',
                 ]
@@ -211,7 +263,6 @@ class PostiWarehouse {
                 <option value="<?php echo $val; ?>" <?php echo isset($options[$args['label_for']]) ? ( selected($options[$args['label_for']], $val, false) ) : ( '' ); ?>>
                     <?php
                     echo $type;
-                    ;
                     ?>
                 </option>
             <?php endforeach; ?>
@@ -271,14 +322,17 @@ class PostiWarehouse {
 
 //on order sttaus chnage
         add_action('woocommerce_order_status_changed', array($this, 'posti_check_order'), 10, 3);
-        
+
         //upate ajax warehouses
         add_action('wp_ajax_posti_warehouses', array($this, 'get_ajax_post_warehouse'));
+
+        //filter shipping methods, if product is in Posti store, allow only posti shipping methods
+        add_filter('woocommerce_package_rates', array($this, 'hide_other_shipping_if_posti_products'), 100, 1);
     }
 
     public function posti_interval($schedules) {
         $schedules['30_minutes'] = array(
-            'interval' => 300, //1800,
+            'interval' => 1800, //1800,
             'display' => esc_html__('Every 30 Minutes'),);
         return $schedules;
     }
@@ -290,20 +344,20 @@ class PostiWarehouse {
         );
         return $product_data_tabs;
     }
-    
+
     public function get_ajax_post_warehouse() {
-        
+
         if (!isset($_POST['catalog_type'])) {
             wp_die('', '', 501);
         }
         $warehouses = $this->api->getWarehouses();
         $warehouses_options = array();
         foreach ($warehouses as $warehouse) {
-                if ($warehouse['catalogType'] !== $_POST['catalog_type']) {
-                    continue;
-                }
-                $warehouses_options[] = array('value' => $warehouse['externalId'], 'name' => $warehouse['externalId'] . ' - ' . $warehouse['catalogName']);
+            if ($warehouse['catalogType'] !== $_POST['catalog_type']) {
+                continue;
             }
+            $warehouses_options[] = array('value' => $warehouse['externalId'], 'name' => $warehouse['externalId'] . ' - ' . $warehouse['catalogName']);
+        }
         echo json_encode($warehouses_options);
         die();
     }
@@ -324,7 +378,7 @@ class PostiWarehouse {
             }
 
             $warehouses = $this->api->getWarehouses();
-            $warehouses_options = array();
+            $warehouses_options = array(''=> 'Select warehouse');
             foreach ($warehouses as $warehouse) {
                 if (!$type || $type !== $warehouse['catalogType']) {
                     continue;
@@ -418,9 +472,9 @@ class PostiWarehouse {
             }
             if (count($products)) {
                 $this->api->addProduct($products, $business_id);
-//add 0 to force sync
+                //add 0 to force sync
                 update_post_meta($_product->get_id(), '_posti_last_sync', 0);
-//$this->syncProducts($products_ids);
+                $this->syncProducts($products_ids);
             }
         }
     }
@@ -442,7 +496,7 @@ class PostiWarehouse {
                 $class = 'notice notice-error';
                 $message = __('Posti error: Please select Posti warehouse.', 'woo-pakettikauppa');
                 printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr($class), esc_html($message));
-            } elseif (!$last_sync || $last_sync < (time() - 3600)) {
+            } elseif ($type && $type !== 'Store' && (!$last_sync || $last_sync < (time() - 3600))) {
                 $class = 'notice notice-error';
                 $message = __('Posti error: product sync not active. Please check product SKU, price or try resave.', 'woo-pakettikauppa');
                 printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr($class), esc_html($message));
@@ -518,7 +572,7 @@ class PostiWarehouse {
                 $this->syncProducts($product_ids);
             }
         }
-        
+
         $this->order->updatePostiOrders();
     }
 
@@ -532,9 +586,9 @@ class PostiWarehouse {
         if ($new_status == "processing") {
             $options = get_option('posti_wh_options');
             if (isset($options['posti_wh_field_autoorder'])) {
-            //if autoorder on, check if order has posti products
+                //if autoorder on, check if order has posti products
                 $order = wc_get_order($order_id);
-                if ($this->order->hasPostiProducts($order)){
+                if ($this->order->hasPostiProducts($order)) {
                     update_post_meta($order_id, '_posti_wh_order', '1');
                     $this->order->addOrder($order);
                 }
@@ -542,5 +596,32 @@ class PostiWarehouse {
         }
     }
 
+    public function hide_other_shipping_if_posti_products($rates) {
+        global $woocommerce;
+        $hide_other = false;
+        $items = $woocommerce->cart->get_cart();
+
+        foreach($items as $item => $values) { 
+            $type = get_post_meta($values['data']->get_id(), '_posti_wh_stock_type', true);
+            $product_warehouse = get_post_meta($values['data']->get_id(), '_posti_wh_warehouse', true);
+            if ($type == "Posti" && $product_warehouse) {
+                $hide_other = true;
+                break;
+            }
+        }
+        
+        $posti_rates = array();
+        if ($hide_other){
+            foreach ($rates as $rate_id => $rate) {
+
+                if (stripos($rate_id, 'posti_shipping_method') !== false) {
+
+
+                    $posti_rates[$rate_id] = $rate;
+                }
+            }
+        }
+        return !empty($posti_rates) ? $posti_rates : $rates;
+    }
 
 }

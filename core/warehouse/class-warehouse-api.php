@@ -6,13 +6,15 @@ class PostiWarehouseApi {
     private $password = null;
     private $token = null;
     private $test = false;
+    private $debug = false;
     private $business_id = false;
 
-    public function __construct($business_id, $test = false) {
+    public function __construct($business_id, $test = false, $debug = false) {
         $this->business_id = $business_id;
         if ($test) {
             $this->test = true;
         }
+        $this->debug = $debug;
         $options = get_option('posti_wh_options');
         $this->username = $options['posti_wh_field_username'];
         $this->password = $options['posti_wh_field_password'];
@@ -75,7 +77,10 @@ class PostiWarehouseApi {
         $header = array();
         //$header[] = 'Accept: application/json';
         $header[] = 'Authorization: Bearer ' . $this->token;
-
+        
+        if ($data){
+            $this->log($data);
+        }
 
         if ($action == "POST" || $action == "PUT") {
             $payload = json_encode($data);
@@ -101,9 +106,10 @@ class PostiWarehouseApi {
         
         if (!$result) {
 
-            echo curl_error($curl);
+            $this->log($curl);
             return false;
         }
+        $this->log($result);
 
         if ($http_status != 200) {
             return false;
@@ -155,5 +161,22 @@ class PostiWarehouseApi {
     public function getOrder($order_id, $business_id = false) {
         $status = $this->ApiCall('orders/'.$order_id, '', 'GET');
         return $status;
+    }
+    
+    private function log($msg){
+        if ($this->debug){
+            if (is_array($msg) || is_object($msg)){
+                $msg = print_r($msg, true);
+            }
+            $debug = get_option('posti_wh_logs',array());
+            if (!is_array($debug)){
+                $debug = array();
+            }
+            $debug[] = date('Y-m-d H:i:s').': '.$msg;
+            if (count($debug) > 10){
+                $debug = array_shift($debug);
+            }
+            update_option('posti_wh_logs',$debug);
+        }
     }
 }
