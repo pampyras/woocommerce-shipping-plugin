@@ -191,6 +191,9 @@ class PostiOrder {
             //"totalWeight" => 0,
             "totalWholeSalePrice" => $total_price + $total_tax,
             "deliveryOperator" => "Posti",
+            "trackingCodes" => array(
+                "TESTTRACKING"
+             ),
             /*
               "trackingCodes" => [
               "string"

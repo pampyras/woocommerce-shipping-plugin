@@ -613,15 +613,13 @@ class PostiWarehouse {
         $posti_rates = array();
         if ($hide_other){
             foreach ($rates as $rate_id => $rate) {
-
                 if (stripos($rate_id, 'posti_shipping_method') !== false) {
-
-
                     $posti_rates[$rate_id] = $rate;
                 }
             }
+            return $posti_rates;
         }
-        return !empty($posti_rates) ? $posti_rates : $rates;
+        return $rates;
     }
 
 }

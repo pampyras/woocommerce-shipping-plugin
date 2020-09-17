@@ -126,6 +126,7 @@ class PostiWarehouseApi {
                     'warehouses' => $warehouses['content'],
                     'last_sync' => time(),
                 ));
+                $warehouses = $warehouses['content'];
             } else {
                 $warehouses = array();
             }
