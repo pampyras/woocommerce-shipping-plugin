@@ -328,11 +328,16 @@ class PostiWarehouse {
 
         //filter shipping methods, if product is in Posti store, allow only posti shipping methods
         add_filter('woocommerce_package_rates', array($this, 'hide_other_shipping_if_posti_products'), 100, 1);
+
+
+        //api tracking columns
+        add_filter('manage_edit-shop_order_columns', array($this, 'posti_tracking_column'));
+        add_action( 'manage_posts_custom_column', array($this, 'posti_tracking_column_data') );
     }
 
     public function posti_interval($schedules) {
         $schedules['30_minutes'] = array(
-            'interval' => 1800, //1800,
+            'interval' => 300, //1800,
             'display' => esc_html__('Every 30 Minutes'),);
         return $schedules;
     }
@@ -378,7 +383,7 @@ class PostiWarehouse {
             }
 
             $warehouses = $this->api->getWarehouses();
-            $warehouses_options = array(''=> 'Select warehouse');
+            $warehouses_options = array('' => 'Select warehouse');
             foreach ($warehouses as $warehouse) {
                 if (!$type || $type !== $warehouse['catalogType']) {
                     continue;
@@ -601,7 +606,7 @@ class PostiWarehouse {
         $hide_other = false;
         $items = $woocommerce->cart->get_cart();
 
-        foreach($items as $item => $values) { 
+        foreach ($items as $item => $values) {
             $type = get_post_meta($values['data']->get_id(), '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($values['data']->get_id(), '_posti_wh_warehouse', true);
             if ($type == "Posti" && $product_warehouse) {
@@ -609,9 +614,9 @@ class PostiWarehouse {
                 break;
             }
         }
-        
+
         $posti_rates = array();
-        if ($hide_other){
+        if ($hide_other) {
             foreach ($rates as $rate_id => $rate) {
                 if (stripos($rate_id, 'posti_shipping_method') !== false) {
                     $posti_rates[$rate_id] = $rate;
@@ -620,6 +625,24 @@ class PostiWarehouse {
             return $posti_rates;
         }
         return $rates;
+    }
+
+    public function posti_tracking_column($columns) {
+        $new_columns = array();
+        foreach ($columns as $key => $name) {
+            $new_columns[$key] = $name;
+            if ('order_status' === $key) {
+                $new_columns['posti_api_tracking'] = __('Posti API Tracking', 'posti_wh');
+            }
+        }
+        return $new_columns;
+    }
+    
+    public function posti_tracking_column_data( $column_name  ) {
+        if( $column_name  == 'posti_api_tracking' ) {
+            $tracking = get_post_meta(get_the_ID(), '_posti_api_tracking', true) ;
+            echo $tracking ? $tracking : '–';
+        }
     }
 
 }

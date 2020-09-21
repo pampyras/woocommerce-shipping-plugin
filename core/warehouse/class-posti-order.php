@@ -36,7 +36,7 @@ class PostiOrder {
         if (!is_object($order)) {
             $order = wc_get_order($order);
         }
-        if (!$order){
+        if (!$order) {
             return false;
         }
         $items = $order->get_items();
@@ -64,9 +64,6 @@ class PostiOrder {
 
     public function updatePostiOrders() {
         $options = get_option('posti_wh_options');
-        if (!isset($options['posti_wh_field_autocomplete'])) {
-            return false;
-        }
         $args = array(
             'post_type' => 'shop_order',
             'post_status' => 'wc-processing',
@@ -80,11 +77,26 @@ class PostiOrder {
         $orders = get_posts($args);
         if (is_array($orders)) {
             foreach ($orders as $order_id) {
-                $status = $this->getOrderStatus($order_id);
-                if ($status == 'Delivered'){
-                    $order = wc_get_order( $order_id );
-                    if($order){
-                       $order->update_status( 'completed', '', true );
+                $order_data = $this->getOrder($order_id);
+                if (!$order_data) {
+                    continue;
+                }
+                if (!isset($options['posti_wh_field_autocomplete'])) {
+                    continue;
+                }
+                $tracking = $order_data['trackingCodes'];
+                if ($tracking){
+                    if (is_array($tracking)){
+                        $tracking = implode(', ',$tracking);
+                    }
+                    update_post_meta($order_id, '_posti_api_tracking', $tracking);
+                }
+                
+                $status = $order_data['status']['value'];
+                if ($status == 'Delivered') {
+                    $order = wc_get_order($order_id);
+                    if ($order) {
+                        $order->update_status('completed', '', true);
                     }
                 }
             }
@@ -101,12 +113,15 @@ class PostiOrder {
             $type = get_post_meta($item['product_id'], '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($item['product_id'], '_posti_wh_warehouse', true);
             if ($type == "Posti" && $product_warehouse) {
-                $total_price += $item->$total_price;
-                $total_tax += $item->get_total_tax();
+                $total_price += $item->get_total();
+                $total_tax += $item->get_subtotal_tax();
+                $_product = wc_get_product($item['product_id']);
                 $order_items[] = [
                     "externalId" => $business_id . '-' . $item['product_id'],
                     "externalProductId" => $business_id . '-' . $item['product_id'],
-                    //"productEANCode" => $item['product_id'],
+                    "productEANCode" => $_product->get_sku(),
+                    "productUnitOfMeasure" => "KPL",
+                    "productDescription" => $item['name'],
                     "externalWarehouseId" => $product_warehouse,
                     //"weight" => 0,
                     //"volume" => 0,
@@ -128,13 +143,26 @@ class PostiOrder {
         $order = array(
             "externalId" => $business_id . "-" . $_order->get_id(),
             "clientId" => (string) $business_id,
-            "orderDate" => date('Y-m-d\TH:i:s.vO', strtotime($_order->get_date_created()->__toString())),
+            "orderDate" => date('Y-m-d\TH:i:s.vP', strtotime($_order->get_date_created()->__toString())),
+            "metadata" => [
+                "documentType" => "SalesOrder"
+            ],
+            "vendor" => [
+                //"externalId" => "string",
+                "name" => get_option("blogname"),
+                "streetAddress" => get_option('woocommerce_store_address'),
+                "postalCode" => get_option('woocommerce_store_postcode'),
+                "postOffice" => get_option('woocommerce_store_city'),
+                "country" => get_option('woocommerce_default_country'),
+                //"telephone" => "string",
+                "email" => get_option("admin_email")
+            ],
             "sender" => [
                 //"externalId" => "string",
                 "name" => get_option("blogname"),
                 "streetAddress" => get_option('woocommerce_store_address'),
                 "postalCode" => get_option('woocommerce_store_postcode'),
-                //"postOffice" => "string",
+                "postOffice" => get_option('woocommerce_store_city'),
                 "country" => get_option('woocommerce_default_country'),
                 //"telephone" => "string",
                 "email" => get_option("admin_email")
@@ -144,7 +172,7 @@ class PostiOrder {
                 "name" => $_order->get_billing_first_name() . ' ' . $_order->get_billing_last_name(),
                 "streetAddress" => $_order->get_billing_address_1(),
                 "postalCode" => $_order->get_billing_postcode(),
-                //"postOffice" => "string",
+                "postOffice" => $_order->get_billing_city(),
                 "country" => $_order->get_billing_country(),
                 "telephone" => $_order->get_billing_phone(),
                 "email" => $_order->get_billing_email()
@@ -154,7 +182,7 @@ class PostiOrder {
                 "name" => $_order->get_billing_first_name() . ' ' . $_order->get_billing_last_name(),
                 "streetAddress" => $_order->get_billing_address_1(),
                 "postalCode" => $_order->get_billing_postcode(),
-                //"postOffice" => "string",
+                "postOffice" => $_order->get_billing_city(),
                 "country" => $_order->get_billing_country(),
                 "telephone" => $_order->get_billing_phone(),
                 "email" => $_order->get_billing_email()
@@ -164,7 +192,7 @@ class PostiOrder {
                 "name" => $_order->get_shipping_first_name() . ' ' . $_order->get_shipping_last_name(),
                 "streetAddress" => $_order->get_shipping_address_1(),
                 "postalCode" => $_order->get_shipping_postcode(),
-                //"postOffice" => "string",
+                "postOffice" => $_order->get_shipping_city(),
                 "country" => $_order->get_shipping_country(),
                 "telephone" => $_order->get_billing_phone(),
                 "email" => $_order->get_billing_email()
@@ -184,16 +212,13 @@ class PostiOrder {
               ]
               ]
               ], */
-            //"serviceCode" => "string",
+            "serviceCode" => "2103",
             //"routingServiceCode" => "string",
             "totalPrice" => $total_price,
             "totalTax" => $total_tax,
             //"totalWeight" => 0,
             "totalWholeSalePrice" => $total_price + $total_tax,
             "deliveryOperator" => "Posti",
-            "trackingCodes" => array(
-                "TESTTRACKING"
-             ),
             /*
               "trackingCodes" => [
               "string"
