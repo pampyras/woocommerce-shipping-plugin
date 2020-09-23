@@ -83,6 +83,9 @@ class PostiWarehouse {
             <ul>
                 <?php
                 $debug = get_option('posti_wh_logs', array());
+                if (!is_array($debug)){
+                    $debug = array($debug);
+                }
                 $debug = array_reverse($debug);
                 foreach ($debug as $info) {
                     echo '<li>' . $info . '</li>';

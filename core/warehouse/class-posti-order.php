@@ -119,7 +119,7 @@ class PostiOrder {
                 $_product = wc_get_product($item['product_id']);
                 $order_items[] = [
                     "externalId" => $item_counter,
-                    "externalProductId" => $business_id . '-' . $item['product_id'],
+                    "externalProductId" => $business_id . '-' . $_product->get_sku(),
                     "productEANCode" => $_product->get_sku(),
                     "productUnitOfMeasure" => "KPL",
                     "productDescription" => $item['name'],
