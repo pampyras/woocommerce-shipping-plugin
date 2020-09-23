@@ -433,6 +433,7 @@ class PostiWarehouse {
 //update product information
         $type = get_post_meta($post_id, '_posti_wh_stock_type', true);
         $product_warehouse = get_post_meta($post_id, '_posti_wh_warehouse', true);
+        $product_distributor = get_post_meta($post_id, '_posti_wh_distribution', true);
         if ($type == "Posti" && $product_warehouse) {
             $options = get_option('posti_wh_options');
             $business_id = false;
@@ -463,6 +464,7 @@ class PostiWarehouse {
                     "status" => "ACTIVE",
                     "recommendedRetailPrice" => round(100 * $_product->get_price()),
                     "currency" => get_woocommerce_currency(),
+                    "distributor" => $product_distributor,
                 );
                 $balances = array(
                     array(
