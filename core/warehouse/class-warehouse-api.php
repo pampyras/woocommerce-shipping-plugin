@@ -78,6 +78,7 @@ class PostiWarehouseApi {
         //$header[] = 'Accept: application/json';
         $header[] = 'Authorization: Bearer ' . $this->token;
         
+        $this->log("Request to: " . $url);
         if ($data){
             $this->log($data);
         }
@@ -109,7 +110,7 @@ class PostiWarehouseApi {
             $this->log($curl);
             return false;
         }
-        $this->log($result);
+        $this->log($result, 'Response from ' . $url . ': ');
 
         if ($http_status != 200) {
             return false;
@@ -164,10 +165,10 @@ class PostiWarehouseApi {
         return $status;
     }
     
-    private function log($msg){
+    private function log($msg, $extra = ''){
         if ($this->debug){
             if (is_array($msg) || is_object($msg)){
-                $msg = print_r($msg, true);
+                $msg = $extra . print_r($msg, true);
             }
             $debug = get_option('posti_wh_logs',array());
             if (!is_array($debug)){
