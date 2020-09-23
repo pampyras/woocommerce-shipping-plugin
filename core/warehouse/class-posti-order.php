@@ -109,6 +109,7 @@ class PostiOrder {
         $total_price = 0;
         $total_tax = 0;
         $items = $_order->get_items();
+        $item_counter = 1;
         foreach ($items as $item_id => $item) {
             $type = get_post_meta($item['product_id'], '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($item['product_id'], '_posti_wh_warehouse', true);
@@ -117,7 +118,7 @@ class PostiOrder {
                 $total_tax += $item->get_subtotal_tax();
                 $_product = wc_get_product($item['product_id']);
                 $order_items[] = [
-                    "externalId" => $business_id . '-' . $item['product_id'],
+                    "externalId" => $item_counter,
                     "externalProductId" => $business_id . '-' . $item['product_id'],
                     "productEANCode" => $_product->get_sku(),
                     "productUnitOfMeasure" => "KPL",
@@ -137,6 +138,7 @@ class PostiOrder {
                           ]
                          */
                 ];
+                $item_counter++;
             }
         }
 

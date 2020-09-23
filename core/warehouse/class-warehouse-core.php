@@ -459,6 +459,8 @@ class PostiWarehouse {
                         )
                     ),
                     'eanCode' => $_product->get_sku(),
+                    "unitOfMeasure" => "KPL",
+                    "status" => "ACTIVE",
                     "recommendedRetailPrice" => round(100 * $_product->get_price()),
                     "currency" => get_woocommerce_currency(),
                 );
