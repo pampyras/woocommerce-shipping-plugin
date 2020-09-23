@@ -76,8 +76,8 @@ class PostiOrder {
         );
         $orders = get_posts($args);
         if (is_array($orders)) {
-            foreach ($orders as $order_id) {
-                $order_data = $this->getOrder($order_id);
+            foreach ($orders as $order) {
+                $order_data = $this->getOrder($order->ID);
                 if (!$order_data) {
                     continue;
                 }
@@ -89,14 +89,14 @@ class PostiOrder {
                     if (is_array($tracking)){
                         $tracking = implode(', ',$tracking);
                     }
-                    update_post_meta($order_id, '_posti_api_tracking', $tracking);
+                    update_post_meta($order->ID, '_posti_api_tracking', $tracking);
                 }
                 
                 $status = $order_data['status']['value'];
                 if ($status == 'Delivered') {
-                    $order = wc_get_order($order_id);
-                    if ($order) {
-                        $order->update_status('completed', '', true);
+                    $_order = wc_get_order($order->ID);
+                    if ($_order) {
+                        $_order->update_status('completed', '', true);
                     }
                 }
             }
