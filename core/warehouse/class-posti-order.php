@@ -110,6 +110,12 @@ class PostiOrder {
         $total_tax = 0;
         $items = $_order->get_items();
         $item_counter = 1;
+        $service_code = "2103";
+        $routing_service_code = "";
+        $pickup_point = get_post_meta($_order->get_id(), '_woo_posti_shipping_pickup_point_id', true);
+        if ($pickup_point){
+            $routing_service_code = "3201";
+        }
         foreach ($items as $item_id => $item) {
             $type = get_post_meta($item['product_id'], '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($item['product_id'], '_posti_wh_warehouse', true);
@@ -214,8 +220,8 @@ class PostiOrder {
               ]
               ]
               ], */
-            "serviceCode" => "2103",
-            //"routingServiceCode" => "string",
+            "serviceCode" => $service_code,
+            "routingServiceCode" => $routing_service_code,
             "totalPrice" => $total_price,
             "totalTax" => $total_tax,
             //"totalWeight" => 0,
