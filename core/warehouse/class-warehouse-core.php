@@ -415,7 +415,7 @@ class PostiWarehouse {
             woocommerce_wp_text_input(
                     array(
                         'id' => '_posti_wh_distribution',
-                        'label' => __('Distribution ID', 'woo-pakettikauppa'),
+                        'label' => __('Distributor ID', 'woo-pakettikauppa'),
                         'placeholder' => '',
                         'type' => 'text',
                     )
@@ -465,7 +465,7 @@ class PostiWarehouse {
                     'eanCode' => $_product->get_sku(),
                     "unitOfMeasure" => "KPL",
                     "status" => "ACTIVE",
-                    "recommendedRetailPrice" => round(100 * $_product->get_price()),
+                    "recommendedRetailPrice" => $_product->get_price(),
                     "currency" => get_woocommerce_currency(),
                     "distributor" => $product_distributor,
                 );
@@ -475,7 +475,7 @@ class PostiWarehouse {
                         "productExternalId" => $business_id . '-' . $_product->get_sku(),
                         "catalogExternalId" => $product_warehouse,
                         //"quantity" => 0.0,
-                        "wholesalePrice" => round(100 * $_product->get_price()),
+                        "wholesalePrice" => $_product->get_price(),
                         "currency" => get_woocommerce_currency()
                     )
                 );
