@@ -83,7 +83,7 @@ class PostiWarehouse {
             <ul>
                 <?php
                 $debug = get_option('posti_wh_logs', array());
-                if (!is_array($debug)){
+                if (!is_array($debug)) {
                     $debug = array($debug);
                 }
                 $debug = array_reverse($debug);
@@ -326,16 +326,64 @@ class PostiWarehouse {
 //on order sttaus chnage
         add_action('woocommerce_order_status_changed', array($this, 'posti_check_order'), 10, 3);
 
-        //upate ajax warehouses
+//upate ajax warehouses
         add_action('wp_ajax_posti_warehouses', array($this, 'get_ajax_post_warehouse'));
 
-        //filter shipping methods, if product is in Posti store, allow only posti shipping methods
+//filter shipping methods, if product is in Posti store, allow only posti shipping methods
         add_filter('woocommerce_package_rates', array($this, 'hide_other_shipping_if_posti_products'), 100, 1);
 
 
-        //api tracking columns
+//api tracking columns
         add_filter('manage_edit-shop_order_columns', array($this, 'posti_tracking_column'));
-        add_action( 'manage_posts_custom_column', array($this, 'posti_tracking_column_data') );
+        add_action('manage_posts_custom_column', array($this, 'posti_tracking_column_data'));
+
+//EAN field
+        add_action('woocommerce_product_options_inventory_product_data', array($this, 'woocom_simple_product_ean_field'), 10, 1);
+        
+        add_action('woocommerce_product_after_variable_attributes', array($this, 'variation_settings_fields'), 10, 3);
+        add_action('woocommerce_save_product_variation', array($this, 'save_variation_settings_fields'), 10, 2);
+    }
+
+    public function woocom_simple_product_ean_field() {
+        global $woocommerce, $post;
+        $product = new WC_Product(get_the_ID());
+        echo '<div id="ean_attr" class="options_group">';
+        woocommerce_wp_text_input(
+                array(
+                    'id' => '_ean',
+                    'label' => __('EAN', 'textdomain'),
+                    'placeholder' => '01234567891231',
+                    'desc_tip' => 'true',
+                    'description' => __('Enter EAN number', 'textdomain')
+                )
+        );
+        echo '</div>';
+    }
+
+
+    public function variation_settings_fields($loop, $variation_data, $variation) {
+        woocommerce_wp_text_input(
+                array(
+                    'id' => '_ean[' . $variation->ID . ']',
+                    'label' => __('EAN', 'textdomain'),
+                    'placeholder' => '01234567891231',
+                    'desc_tip' => 'true',
+                    'description' => __('Enter EAN number', 'textdomain'),
+                    'value' => get_post_meta($variation->ID, '_ean', true)
+                )
+        );
+    }
+
+    public function save_variation_settings_fields($post_id) {
+
+        $ean_post = $_POST['_ean'][$post_id];
+        if (isset($ean_post)) {
+            update_post_meta($post_id, '_ean', esc_attr($ean_post));
+        }
+        $ean_post = get_post_meta($post_id, '_ean', true);
+        if (empty($ean_post)) {
+            delete_post_meta($post_id, '_ean', '');
+        }
     }
 
     public function posti_interval($schedules) {
@@ -375,281 +423,285 @@ class PostiWarehouse {
         ?>
         <!-- id below must match target registered in above add_my_custom_product_data_tab function -->
         <div id="posti_wh_tab" class="panel woocommerce_options_panel">
-            <?php
-            $type = get_post_meta($post->ID, '_posti_wh_stock_type', true);
-            $product_warehouse = get_post_meta($post->ID, '_posti_wh_warehouse', true);
-            if (!$type) {
-                $options = get_option('posti_wh_options');
-                if (isset($options['posti_wh_field_type'])) {
-                    $type = $options['posti_wh_field_type'];
-                }
-            }
-
-            $warehouses = $this->api->getWarehouses();
-            $warehouses_options = array('' => 'Select warehouse');
-            foreach ($warehouses as $warehouse) {
-                if (!$type || $type !== $warehouse['catalogType']) {
-                    continue;
-                }
-                $warehouses_options[$warehouse['externalId']] = $warehouse['externalId'] . ' - ' . $warehouse['catalogName'];
-            }
-            //var_dump($this->api->getProductsByWarehouse($product_warehouse));
-            woocommerce_wp_select(
-                    array(
-                        'id' => '_posti_wh_stock_type',
-                        'label' => __('Stock type', 'woo-pakettikauppa'),
-                        'options' => $this->store_types,
-                        'value' => $type
-                    )
-            );
-
-            woocommerce_wp_select(
-                    array(
-                        'id' => '_posti_wh_warehouse',
-                        'label' => __('Warehouse', 'woo-pakettikauppa'),
-                        'options' => $warehouses_options,
-                        'value' => $product_warehouse
-                    )
-            );
-
-            woocommerce_wp_text_input(
-                    array(
-                        'id' => '_posti_wh_distribution',
-                        'label' => __('Distributor ID', 'woo-pakettikauppa'),
-                        'placeholder' => '',
-                        'type' => 'text',
-                    )
-            );
-            ?>
-        </div>
         <?php
-    }
-
-    public function posti_wh_product_tab_fields_save($post_id) {
-
-        $this->saveWCField('_posti_wh_stock_type', $post_id);
-        $this->saveWCField('_posti_wh_warehouse', $post_id);
-        $this->saveWCField('_posti_wh_distribution', $post_id);
-    }
-
-    public function after_product_save($post_id) {
-//update product information
-        $type = get_post_meta($post_id, '_posti_wh_stock_type', true);
-        $product_warehouse = get_post_meta($post_id, '_posti_wh_warehouse', true);
-        $product_distributor = get_post_meta($post_id, '_posti_wh_distribution', true);
-        if ($type == "Posti" && $product_warehouse) {
+        $type = get_post_meta($post->ID, '_posti_wh_stock_type', true);
+        $product_warehouse = get_post_meta($post->ID, '_posti_wh_warehouse', true);
+        if (!$type) {
             $options = get_option('posti_wh_options');
-            $business_id = false;
-            if (isset($options['posti_wh_field_business_id'])) {
-                $business_id = $options['posti_wh_field_business_id'];
-            }
-            if (!$business_id) {
-                return;
-            }
-            $products = array();
-            $products_ids = array();
-            $_product = wc_get_product($post_id);
-            $type = $_product->get_type();
-            if ($type == 'variable') {
-                $_products = $_product->get_children();
-            } else {
-                $product = array(
-                    'externalId' => $business_id . '-' . $_product->get_sku(),
-                    "supplierId" => $business_id,
-                    'descriptions' => array(
-                        'en' => array(
-                            'name' => $_product->get_name(),
-                            'description' => $_product->get_description()
-                        )
-                    ),
-                    'eanCode' => $_product->get_sku(),
-                    "unitOfMeasure" => "KPL",
-                    "status" => "ACTIVE",
-                    "recommendedRetailPrice" => $_product->get_price(),
-                    "currency" => get_woocommerce_currency(),
-                    "distributor" => $product_distributor,
-                );
-                $balances = array(
-                    array(
-                        "retailerId" => $business_id,
-                        "productExternalId" => $business_id . '-' . $_product->get_sku(),
-                        "catalogExternalId" => $product_warehouse,
-                        //"quantity" => 0.0,
-                        "wholesalePrice" => $_product->get_price(),
-                        "currency" => get_woocommerce_currency()
-                    )
-                );
-                $products_ids[$business_id . '-' . $_product->get_sku()] = $_product->get_id();
-                $products[] = array('product' => $product, 'balances' => $balances);
-            }
-            if (count($products)) {
-                $this->api->addProduct($products, $business_id);
-                //add 0 to force sync
-                update_post_meta($_product->get_id(), '_posti_last_sync', 0);
-                $this->syncProducts($products_ids);
+            if (isset($options['posti_wh_field_type'])) {
+                $type = $options['posti_wh_field_type'];
             }
         }
-    }
 
-    private function saveWCField($name, $post_id) {
-        $value = isset($_POST[$name]) ? $_POST[$name] : '';
-        update_post_meta($post_id, $name, $value);
-    }
-
-    public function posti_notices() {
-        $screen = get_current_screen();
-        if (( $screen->id == 'product' ) && ($screen->parent_base == 'edit')) {
-            global $post;
-            $id = $post->ID;
-            $type = get_post_meta($post->ID, '_posti_wh_stock_type', true);
-            $product_warehouse = get_post_meta($post->ID, '_posti_wh_warehouse', true);
-            $last_sync = get_post_meta($post->ID, '_posti_last_sync', true);
-            if ($type == 'Posti' && !$product_warehouse) {
-                $class = 'notice notice-error';
-                $message = __('Posti error: Please select Posti warehouse.', 'woo-pakettikauppa');
-                printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr($class), esc_html($message));
-            } elseif ($type && $type !== 'Store' && (!$last_sync || $last_sync < (time() - 3600))) {
-                $class = 'notice notice-error';
-                $message = __('Posti error: product sync not active. Please check product SKU, price or try resave.', 'woo-pakettikauppa');
-                printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr($class), esc_html($message));
+        $warehouses = $this->api->getWarehouses();
+        $warehouses_options = array('' => 'Select warehouse');
+        foreach ($warehouses as $warehouse) {
+            if (!$type || $type !== $warehouse['catalogType']) {
+                continue;
             }
+            $warehouses_options[$warehouse['externalId']] = $warehouse['externalId'] . ' - ' . $warehouse['catalogName'];
         }
-    }
-
-    private function syncProducts($ids) {
-        foreach ($ids as $id) {
-            $_product = wc_get_product($id);
-            $options = get_option('posti_wh_options');
-            $business_id = false;
-            if (isset($options['posti_wh_field_business_id'])) {
-                $business_id = $options['posti_wh_field_business_id'];
-            }
-            if (!$business_id) {
-                return;
-            }
-            $product_reference = $business_id . '-' . $_product->get_sku();
-//$product_warehouse = get_post_meta($post_id, '_posti_wh_warehouse', true);
-            $product_data = $this->api->getProduct($product_reference);
-            if (is_array($product_data)) {
-                if (isset($product_data['balances']) && is_array($product_data['balances'])) {
-                    $stock = 0;
-                    foreach ($product_data['balances'] as $balance) {
-                        if (isset($balance['quantity'])) {
-                            $stock += $balance['quantity'];
-                        }
-                    }
-                    $_product->set_stock_quantity($stock);
-                    $_product->save();
-                    update_post_meta($_product->get_id(), '_posti_last_sync', time());
-                    /*
-                      $stocks = $product_data['warehouseBalance'];
-                      foreach ($stocks as $stock){
-                      if ($stock['externalWarehouseId'] == $product_warehouse){
-                      $_product = set_stock_quantity(0)
-                      }
-                      }
-                     */
-                }
-            }
-        }
-    }
-
-    /*
-     * Cronjob to sync products and orders
-     */
-
-    public function posti_cronjob_callback() {
-        $args = array(
-            'post_type' => 'product',
-            'meta_query' => array(
-                'relation' => 'AND',
+        //var_dump($this->api->getProductsByWarehouse($product_warehouse));
+        woocommerce_wp_select(
                 array(
-                    'key' => '_posti_wh_stock_type',
-                    'value' => 'Posti',
-                ),
-                array(
-                    'key' => '_posti_last_sync',
-                    'value' => (time() - 3600),
-                    'compare' => '<'
-                ),
-            ),
+                    'id' => '_posti_wh_stock_type',
+                    'label' => __('Stock type', 'woo-pakettikauppa'),
+                    'options' => $this->store_types,
+                    'value' => $type
+                )
         );
-        $products = get_posts($args);
-        if (is_array($products)) {
-            $product_ids = [];
-            foreach ($products as $product) {
-                $product_ids[] = $product->ID;
-            }
-            if (count($product_ids)) {
-                $this->syncProducts($product_ids);
-            }
+
+        woocommerce_wp_select(
+                array(
+                    'id' => '_posti_wh_warehouse',
+                    'label' => __('Warehouse', 'woo-pakettikauppa'),
+                    'options' => $warehouses_options,
+                    'value' => $product_warehouse
+                )
+        );
+
+        woocommerce_wp_text_input(
+                array(
+                    'id' => '_posti_wh_distribution',
+                    'label' => __('Distributor ID', 'woo-pakettikauppa'),
+                    'placeholder' => '',
+                    'type' => 'text',
+                )
+        );
+        ?>
+        </div>
+            <?php
         }
 
-        $this->order->updatePostiOrders();
-    }
+        public function posti_wh_product_tab_fields_save($post_id) {
 
-    /*
-     * Check all orders that gets status processing, if order has 
-     * posti product, add order to API
-     */
+            $this->saveWCField('_posti_wh_stock_type', $post_id);
+            $this->saveWCField('_posti_wh_warehouse', $post_id);
+            $this->saveWCField('_posti_wh_distribution', $post_id);
+            $this->saveWCField('_ean', $post_id);
+        }
 
-    public function posti_check_order($order_id, $old_status, $new_status) {
-        $posti_order = false;
-        if ($new_status == "processing") {
-            $options = get_option('posti_wh_options');
-            if (isset($options['posti_wh_field_autoorder'])) {
-                //if autoorder on, check if order has posti products
-                $order = wc_get_order($order_id);
-                if ($this->order->hasPostiProducts($order)) {
-                    update_post_meta($order_id, '_posti_wh_order', '1');
-                    $this->order->addOrder($order);
+        public function after_product_save($post_id) {
+//update product information
+            $type = get_post_meta($post_id, '_posti_wh_stock_type', true);
+            $product_warehouse = get_post_meta($post_id, '_posti_wh_warehouse', true);
+            $product_distributor = get_post_meta($post_id, '_posti_wh_distribution', true);
+            if (($type == "Posti" || $type == "Store") && $product_warehouse) {
+                $options = get_option('posti_wh_options');
+                $business_id = false;
+                if (isset($options['posti_wh_field_business_id'])) {
+                    $business_id = $options['posti_wh_field_business_id'];
+                }
+                if (!$business_id) {
+                    return;
+                }
+                $products = array();
+                $products_ids = array();
+                $_product = wc_get_product($post_id);
+                $type = $_product->get_type();
+                $ean = get_post_meta($post_id, '_ean', true);
+                if ($type == 'variable') {
+                    $_products = $_product->get_children();
+                } else {
+                    $product = array(
+                        'externalId' => $business_id . '-' . $_product->get_sku(),
+                        "supplierId" => $business_id,
+                        'descriptions' => array(
+                            'en' => array(
+                                'name' => $_product->get_name(),
+                                'description' => $_product->get_description()
+                            )
+                        ),
+                        'eanCode' => $ean,//$_product->get_sku(),
+                        "unitOfMeasure" => "KPL",
+                        "status" => "ACTIVE",
+                        "recommendedRetailPrice" => (float)$_product->get_price(),
+                        "currency" => get_woocommerce_currency(),
+                        "distributor" => $product_distributor,
+                    );
+                    $balances = array(
+                        array(
+                            "retailerId" => $business_id,
+                            "productExternalId" => $business_id . '-' . $_product->get_sku(),
+                            "catalogExternalId" => $product_warehouse,
+                            //"quantity" => 0.0,
+                            "wholesalePrice" => (float)$_product->get_price(),
+                            "currency" => get_woocommerce_currency()
+                        )
+                    );
+                    $products_ids[$business_id . '-' . $_product->get_sku()] = $_product->get_id();
+                    $products[] = array('product' => $product, 'balances' => $balances);
+                }
+                if (count($products)) {
+                    $this->api->addProduct($products, $business_id);
+//add 0 to force sync
+                    update_post_meta($_product->get_id(), '_posti_last_sync', 0);
+                    $this->syncProducts($products_ids);
                 }
             }
         }
-    }
 
-    public function hide_other_shipping_if_posti_products($rates) {
-        global $woocommerce;
-        $hide_other = false;
-        $items = $woocommerce->cart->get_cart();
-
-        foreach ($items as $item => $values) {
-            $type = get_post_meta($values['data']->get_id(), '_posti_wh_stock_type', true);
-            $product_warehouse = get_post_meta($values['data']->get_id(), '_posti_wh_warehouse', true);
-            if ($type == "Posti" && $product_warehouse) {
-                $hide_other = true;
-                break;
-            }
+        private function saveWCField($name, $post_id) {
+            $value = isset($_POST[$name]) ? $_POST[$name] : '';
+            update_post_meta($post_id, $name, $value);
         }
 
-        $posti_rates = array();
-        if ($hide_other) {
-            foreach ($rates as $rate_id => $rate) {
-                if (stripos($rate_id, 'posti_shipping_method') !== false) {
-                    $posti_rates[$rate_id] = $rate;
+        public function posti_notices() {
+            $screen = get_current_screen();
+            if (( $screen->id == 'product' ) && ($screen->parent_base == 'edit')) {
+                global $post;
+                $id = $post->ID;
+                $type = get_post_meta($post->ID, '_posti_wh_stock_type', true);
+                $product_warehouse = get_post_meta($post->ID, '_posti_wh_warehouse', true);
+                $last_sync = get_post_meta($post->ID, '_posti_last_sync', true);
+                if ($type && !$product_warehouse) {
+                    $class = 'notice notice-error';
+                    $message = __('Posti error: Please select Posti warehouse.', 'woo-pakettikauppa');
+                    printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr($class), esc_html($message));
+                } elseif ($type && (!$last_sync || $last_sync < (time() - 3600))) {
+                    $class = 'notice notice-error';
+                    $message = __('Posti error: product sync not active. Please check product SKU, price or try resave.', 'woo-pakettikauppa');
+                    printf('<div class="%1$s"><p>%2$s</p></div>', esc_attr($class), esc_html($message));
                 }
             }
-            return $posti_rates;
         }
-        return $rates;
-    }
 
-    public function posti_tracking_column($columns) {
-        $new_columns = array();
-        foreach ($columns as $key => $name) {
-            $new_columns[$key] = $name;
-            if ('order_status' === $key) {
-                $new_columns['posti_api_tracking'] = __('Posti API Tracking', 'posti_wh');
+        private function syncProducts($ids) {
+            foreach ($ids as $id) {
+                $_product = wc_get_product($id);
+                $options = get_option('posti_wh_options');
+                $business_id = false;
+                if (isset($options['posti_wh_field_business_id'])) {
+                    $business_id = $options['posti_wh_field_business_id'];
+                }
+                if (!$business_id) {
+                    return;
+                }
+                $product_reference = $business_id . '-' . $_product->get_sku();
+//$product_warehouse = get_post_meta($post_id, '_posti_wh_warehouse', true);
+                $product_data = $this->api->getProduct($product_reference);
+                if (is_array($product_data)) {
+                    if (isset($product_data['balances']) && is_array($product_data['balances'])) {
+                        $stock = 0;
+                        foreach ($product_data['balances'] as $balance) {
+                            if (isset($balance['quantity'])) {
+                                $stock += $balance['quantity'];
+                            }
+                        }
+                        $_product->set_stock_quantity($stock);
+                        $_product->save();
+                        update_post_meta($_product->get_id(), '_posti_last_sync', time());
+                        /*
+                          $stocks = $product_data['warehouseBalance'];
+                          foreach ($stocks as $stock){
+                          if ($stock['externalWarehouseId'] == $product_warehouse){
+                          $_product = set_stock_quantity(0)
+                          }
+                          }
+                         */
+                    }
+                }
             }
         }
-        return $new_columns;
+
+        /*
+         * Cronjob to sync products and orders
+         */
+
+        public function posti_cronjob_callback() {
+            $args = array(
+                'post_type' => 'product',
+                'meta_query' => array(
+                    'relation' => 'AND',
+                    array(
+                        'key' => '_posti_wh_stock_type',
+                        'value' => array('Store', 'Posti'),
+                        'compare' => 'IN'
+                    ),
+                    array(
+                        'key' => '_posti_last_sync',
+                        'value' => (time() - 3600),
+                        'compare' => '<'
+                    ),
+                ),
+            );
+            $products = get_posts($args);
+            if (is_array($products)) {
+                $product_ids = [];
+                foreach ($products as $product) {
+                    $product_ids[] = $product->ID;
+                }
+                if (count($product_ids)) {
+                    $this->syncProducts($product_ids);
+                }
+            }
+
+            $this->order->updatePostiOrders();
+        }
+
+        /*
+         * Check all orders that gets status processing, if order has 
+         * posti product, add order to API
+         */
+
+        public function posti_check_order($order_id, $old_status, $new_status) {
+            $posti_order = false;
+            if ($new_status == "processing") {
+                $options = get_option('posti_wh_options');
+                if (isset($options['posti_wh_field_autoorder'])) {
+//if autoorder on, check if order has posti products
+                    $order = wc_get_order($order_id);
+                    if ($this->order->hasPostiProducts($order)) {
+                        update_post_meta($order_id, '_posti_wh_order', '1');
+                        $this->order->addOrder($order);
+                    }
+                }
+            }
+        }
+
+        public function hide_other_shipping_if_posti_products($rates) {
+            global $woocommerce;
+            $hide_other = false;
+            $items = $woocommerce->cart->get_cart();
+
+            foreach ($items as $item => $values) {
+                $type = get_post_meta($values['data']->get_id(), '_posti_wh_stock_type', true);
+                $product_warehouse = get_post_meta($values['data']->get_id(), '_posti_wh_warehouse', true);
+                if (($type == "Posti" || $type == "Store") && $product_warehouse) {
+                    $hide_other = true;
+                    break;
+                }
+            }
+
+            $posti_rates = array();
+            if ($hide_other) {
+                foreach ($rates as $rate_id => $rate) {
+                    if (stripos($rate_id, 'posti_shipping_method') !== false) {
+                        $posti_rates[$rate_id] = $rate;
+                    }
+                }
+                return $posti_rates;
+            }
+            return $rates;
+        }
+
+        public function posti_tracking_column($columns) {
+            $new_columns = array();
+            foreach ($columns as $key => $name) {
+                $new_columns[$key] = $name;
+                if ('order_status' === $key) {
+                    $new_columns['posti_api_tracking'] = __('Posti API Tracking', 'posti_wh');
+                }
+            }
+            return $new_columns;
+        }
+
+        public function posti_tracking_column_data($column_name) {
+            if ($column_name == 'posti_api_tracking') {
+                $tracking = get_post_meta(get_the_ID(), '_posti_api_tracking', true);
+                echo $tracking ? $tracking : '–';
+            }
+        }
+
     }
     
-    public function posti_tracking_column_data( $column_name  ) {
-        if( $column_name  == 'posti_api_tracking' ) {
-            $tracking = get_post_meta(get_the_ID(), '_posti_api_tracking', true) ;
-            echo $tracking ? $tracking : '–';
-        }
-    }
-
-}

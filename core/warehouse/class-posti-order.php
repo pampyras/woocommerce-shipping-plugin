@@ -43,7 +43,7 @@ class PostiOrder {
         foreach ($items as $item_id => $item) {
             $type = get_post_meta($item['product_id'], '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($item['product_id'], '_posti_wh_warehouse', true);
-            if ($type == "Posti" && $product_warehouse) {
+            if (($type == "Posti" || $type == "Store") && $product_warehouse) {
                 return true;
             }
         }
@@ -119,14 +119,15 @@ class PostiOrder {
         foreach ($items as $item_id => $item) {
             $type = get_post_meta($item['product_id'], '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($item['product_id'], '_posti_wh_warehouse', true);
-            if ($type == "Posti" && $product_warehouse) {
+            if (($type == "Posti" || $type == "Store") && $product_warehouse) {
                 $total_price += $item->get_total();
                 $total_tax += $item->get_subtotal_tax();
                 $_product = wc_get_product($item['product_id']);
+                $ean = get_post_meta($item['product_id'], '_ean', true);
                 $order_items[] = [
                     "externalId" => $item_counter,
                     "externalProductId" => $business_id . '-' . $_product->get_sku(),
-                    "productEANCode" => $_product->get_sku(),
+                    "productEANCode" => $ean,//$_product->get_sku(),
                     "productUnitOfMeasure" => "KPL",
                     "productDescription" => $item['name'],
                     "externalWarehouseId" => $product_warehouse,

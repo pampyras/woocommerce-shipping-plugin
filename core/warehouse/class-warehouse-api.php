@@ -150,6 +150,7 @@ class PostiWarehouseApi {
     }
 
     public function addProduct($product, $business_id = false) {
+        //var_dump($product); exit;
         $status = $this->ApiCall('inventory', $product, 'PUT');
         return $status;
     }
