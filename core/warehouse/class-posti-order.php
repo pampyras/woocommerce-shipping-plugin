@@ -120,6 +120,10 @@ class PostiOrder {
             $type = get_post_meta($item['product_id'], '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($item['product_id'], '_posti_wh_warehouse', true);
             if (($type == "Posti" || $type == "Store") && $product_warehouse) {
+                $item_service_code = wc_get_order_item_meta($item_id, 'service_code');
+                if ($item_service_code){
+                    $service_code = $item_service_code;
+                }
                 $total_price += $item->get_total();
                 $total_tax += $item->get_subtotal_tax();
                 $_product = wc_get_product($item['product_id']);
