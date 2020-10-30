@@ -256,7 +256,7 @@ class PostiOrder {
         );
         
         if ($pickup_point){
-            $order['deliveryAddress'] = pickupPointData($pickup_point, $_order, $business_id);
+            $order['deliveryAddress'] = $this->pickupPointData($pickup_point, $_order, $business_id);
         }
 
         return $order;
