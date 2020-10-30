@@ -265,7 +265,7 @@ class PostiOrder {
     public function pickupPointData($id, $_order, $business_id){
         $data = get_transient( 'posti_pickup_points');
         if ($data === false){
-            $data = file_get_contents('https://locationservice.posti.com/api/2/location');
+            $data = $this->api->getUrlData('https://locationservice.posti.com/api/2/location');
             set_transient( 'posti_pickup_points', $data, 3600 * 24 );
         }
         $points = json_decode($data, true);

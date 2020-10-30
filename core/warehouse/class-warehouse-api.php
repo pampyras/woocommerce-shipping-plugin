@@ -117,6 +117,33 @@ class PostiWarehouseApi {
         }
         return json_decode($result, true);
     }
+    
+    public function getUrlData($url) {
+        $curl = curl_init();
+        $header = array();
+        //$header[] = 'Accept: application/json';
+        
+        $this->log("Request to: " . $url);
+
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+        //echo $this->getApiUrl() . $url;
+        curl_setopt($curl, CURLOPT_URL, $this->getApiUrl() . $url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        //curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        $result = curl_exec($curl);
+        $http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        //var_dump($http_status);
+        //var_dump($result); exit;
+        
+        if (!$result) {
+
+            $this->log($curl);
+            return false;
+        }
+        $this->log($result, 'Response from ' . $url . ': ');
+
+        return $result;
+    }
 
     public function getWarehouses() {
         $warehouses_data = get_option('posti_wh_api_warehouses');
