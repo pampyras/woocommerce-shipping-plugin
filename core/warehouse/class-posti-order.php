@@ -254,8 +254,36 @@ class PostiOrder {
              */
             "rows" => $order_items
         );
+        
+        if ($pickup_point){
+            $order['deliveryAddress'] = pickupPointData($pickup_point, $_order, $business_id);
+        }
 
         return $order;
+    }
+    
+    public function pickupPointData($id, $_order, $business_id){
+        $data = get_transient( 'posti_pickup_points');
+        if ($data === false){
+            $data = file_get_contents('https://locationservice.posti.com/api/2/location');
+            set_transient( 'posti_pickup_points', $data, 3600 * 24 );
+        }
+        $points = json_decode($data, true);
+        foreach($points as $point){
+            if ($point['pupCode'] === $id){
+                return array(
+                    "externalId" => $business_id . "-" . $_order->get_customer_id(),
+                    "name" => $point['publicName']['en'],
+                    "streetAddress" => $point['address']['en']['address'],
+                    "postalCode" => $point['postalCode'],
+                    "postOffice" => $point['address']['en']['postalCodeName'],
+                    "country" => $point['countryCode'],
+                    "telephone" => $_order->get_billing_phone(),
+                    "email" => $_order->get_billing_email()
+                );
+            }
+        }
+        return false;
     }
 
 }
