@@ -85,13 +85,13 @@ class PostiOrder {
                     continue;
                 }
                 $tracking = $order_data['trackingCodes'];
-                if ($tracking){
-                    if (is_array($tracking)){
-                        $tracking = implode(', ',$tracking);
+                if ($tracking) {
+                    if (is_array($tracking)) {
+                        $tracking = implode(', ', $tracking);
                     }
                     update_post_meta($order->ID, '_posti_api_tracking', $tracking);
                 }
-                
+
                 $status = $order_data['status']['value'];
                 if ($status == 'Delivered') {
                     $_order = wc_get_order($order->ID);
@@ -113,7 +113,7 @@ class PostiOrder {
         $service_code = "2103";
         $routing_service_code = "";
         $pickup_point = get_post_meta($_order->get_id(), '_woo_posti_shipping_pickup_point_id', true);
-        if ($pickup_point){
+        if ($pickup_point) {
             $routing_service_code = "3201";
         }
         foreach ($items as $item_id => $item) {
@@ -121,7 +121,7 @@ class PostiOrder {
             $product_warehouse = get_post_meta($item['product_id'], '_posti_wh_warehouse', true);
             if (($type == "Posti" || $type == "Store") && $product_warehouse) {
                 $item_service_code = wc_get_order_item_meta($item_id, 'service_code');
-                if ($item_service_code){
+                if ($item_service_code) {
                     $service_code = $item_service_code;
                 }
                 $total_price += $item->get_total();
@@ -131,7 +131,7 @@ class PostiOrder {
                 $order_items[] = [
                     "externalId" => $item_counter,
                     "externalProductId" => $business_id . '-' . $_product->get_sku(),
-                    "productEANCode" => $ean,//$_product->get_sku(),
+                    "productEANCode" => $ean, //$_product->get_sku(),
                     "productUnitOfMeasure" => "KPL",
                     "productDescription" => $item['name'],
                     "externalWarehouseId" => $product_warehouse,
@@ -254,36 +254,34 @@ class PostiOrder {
              */
             "rows" => $order_items
         );
-        
-        if ($pickup_point){
+
+        if ($pickup_point) {
             $address = $this->pickupPointData($pickup_point, $_order, $business_id);
-            if ($address){
+            if ($address) {
                 $order['deliveryAddress'] = $address;
             }
         }
 
         return $order;
     }
-    
-    public function pickupPointData($id, $_order, $business_id){
-        $data = get_transient( 'posti_pickup_points');
-        if ($data === false){
-            $data = $this->api->getUrlData('https://locationservice.posti.com/api/2/location');
-            set_transient( 'posti_pickup_points', $data, 3600 * 24 );
-        }
+
+    public function pickupPointData($id, $_order, $business_id) {
+        $data = $this->api->getUrlData('https://locationservice.posti.com/api/2/location');
         $points = json_decode($data, true);
-        foreach($points as $point){
-            if ($point['pupCode'] === $id){
-                return array(
-                    "externalId" => $business_id . "-" . $_order->get_customer_id(),
-                    "name" => $point['publicName']['en'],
-                    "streetAddress" => $point['address']['en']['address'],
-                    "postalCode" => $point['postalCode'],
-                    "postOffice" => $point['address']['en']['postalCodeName'],
-                    "country" => $point['countryCode'],
-                    "telephone" => $_order->get_billing_phone(),
-                    "email" => $_order->get_billing_email()
-                );
+        if (is_array($points) && isset($points['locations'])) {
+            foreach ($points['locations'] as $point) {
+                if ($point['pupCode'] === $id) {
+                    return array(
+                        "externalId" => $business_id . "-" . $_order->get_customer_id(),
+                        "name" => $point['publicName']['en'],
+                        "streetAddress" => $point['address']['en']['address'],
+                        "postalCode" => $point['postalCode'],
+                        "postOffice" => $point['address']['en']['postalCodeName'],
+                        "country" => $point['countryCode'],
+                        "telephone" => $_order->get_billing_phone(),
+                        "email" => $_order->get_billing_email()
+                    );
+                }
             }
         }
         return false;
