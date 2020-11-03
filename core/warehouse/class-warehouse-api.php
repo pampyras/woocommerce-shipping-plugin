@@ -26,7 +26,7 @@ class PostiWarehouseApi {
         }
         return "https://api.posti.fi/";
     }
-    
+
     public function getBusinessId() {
         return $this->business_id;
     }
@@ -47,7 +47,7 @@ class PostiWarehouseApi {
 
         curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
         curl_setopt($curl, CURLOPT_POST, 1);
-        //curl_setopt($curl, CURLOPT_POSTFIELDS, $auth_data);
+//curl_setopt($curl, CURLOPT_POSTFIELDS, $auth_data);
         curl_setopt($curl, CURLOPT_URL, $this->getAuthUrl() . 'oauth/token?grant_type=client_credentials');
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -75,17 +75,17 @@ class PostiWarehouseApi {
         }
         $curl = curl_init();
         $header = array();
-        //$header[] = 'Accept: application/json';
+//$header[] = 'Accept: application/json';
         $header[] = 'Authorization: Bearer ' . $this->token;
-        
+
         $this->log("Request to: " . $url);
-        if ($data){
+        if ($data) {
             $this->log($data);
         }
 
         if ($action == "POST" || $action == "PUT") {
             $payload = json_encode($data);
-            //var_dump($payload);// exit;
+//var_dump($payload); exit;
             $header[] = 'Content-Type: application/json';
             $header[] = 'Content-Length: ' . strlen($payload);
             if ($action == "POST") {
@@ -96,45 +96,45 @@ class PostiWarehouseApi {
             curl_setopt($curl, CURLOPT_POSTFIELDS, $payload);
         }
         curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-        //echo $this->getApiUrl() . $url;
+//echo $this->getApiUrl() . $url;
         curl_setopt($curl, CURLOPT_URL, $this->getApiUrl() . $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        //curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+//curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         $result = curl_exec($curl);
         $http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        //var_dump($http_status);
-        //var_dump($result); exit;
-        
-        if (!$result) {
+//var_dump($http_status);
+//var_dump($result); exit;
 
-            $this->log($curl);
+        if (!$result) {
+            $this->log($http_status . ' - response from ' . $url . ': '.$result );
             return false;
         }
-        $this->log($result, 'Response from ' . $url . ': ');
+
 
         if ($http_status != 200) {
+            $this->log("Response code: " . $http_status);
             return false;
         }
         return json_decode($result, true);
     }
-    
+
     public function getUrlData($url) {
         $curl = curl_init();
         $header = array();
-        //$header[] = 'Accept: application/json';
-        
+//$header[] = 'Accept: application/json';
+
         $this->log("Request to: " . $url);
 
         curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-        //echo $this->getApiUrl() . $url;
+//echo $this->getApiUrl() . $url;
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        //curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+//curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         $result = curl_exec($curl);
         $http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        //var_dump($http_status);
-        //var_dump($result); exit;
-        
+//var_dump($http_status);
+//var_dump($result); exit;
+
         if (!$result) {
 
             $this->log($curl);
@@ -166,7 +166,7 @@ class PostiWarehouseApi {
 
     public function getProduct($id) {
         $product = $this->ApiCall('inventory/' . $id, '', 'GET');
-        //var_dump($product);exit;
+//var_dump($product);exit;
         return $product;
     }
 
@@ -177,36 +177,38 @@ class PostiWarehouseApi {
     }
 
     public function addProduct($product, $business_id = false) {
-        //var_dump($product); exit;
+//var_dump($product); exit;
         $status = $this->ApiCall('inventory', $product, 'PUT');
         return $status;
     }
 
-    
     public function addOrder($order, $business_id = false) {
         $status = $this->ApiCall('orders', $order, 'POST');
         return $status;
     }
-    
+
     public function getOrder($order_id, $business_id = false) {
-        $status = $this->ApiCall('orders/'.$order_id, '', 'GET');
+        $status = $this->ApiCall('orders/' . $order_id, '', 'GET');
         return $status;
     }
-    
-    private function log($msg, $extra = ''){
-        if ($this->debug){
-            if (is_array($msg) || is_object($msg)){
+
+    private function log($msg, $extra = '') {
+        if ($this->debug) {
+            if (is_array($msg) || is_object($msg)) {
                 $msg = $extra . print_r($msg, true);
             }
-            $debug = get_option('posti_wh_logs',array());
-            if (!is_array($debug)){
+            $debug = get_option('posti_wh_logs', array());
+            if (!is_array($debug)) {
                 $debug = array();
             }
-            $debug[] = date('Y-m-d H:i:s').': '.$msg;
-            if (count($debug) > 10){
+            $debug[] = date('Y-m-d H:i:s') . ': ' . $msg;
+            while (count($debug) > 20) {
                 $debug = array_shift($debug);
             }
-            update_option('posti_wh_logs',$debug);
+
+
+            update_option('posti_wh_logs', $debug);
         }
     }
+
 }

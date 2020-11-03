@@ -4,6 +4,8 @@ defined('ABSPATH') || exit;
 class PostiWarehouseMetabox {
 
     private $postiOrder = false;
+    
+    private $error = '';
 
     public function __construct(PostiOrder $order) {
         $this->postiOrder = $order;
@@ -36,11 +38,17 @@ class PostiWarehouseMetabox {
             <div id = "posti-order-action">
                 <?php $this->postiOrder->getOrderActionButton($post->ID); ?>
             </div>
+            <?php if($this->error): ?>
+            <div>
+                <?php echo $this->error; ?>
+            </div>
+            <?php endif; ?>
         </div>
         <?php
     }
 
     public function parse_ajax_meta_box() {
+        
         check_ajax_referer(str_replace('wc_', '', 'posti-order') . '-meta-box', 'security');
 
         if (!is_numeric($_POST['post_id'])) {
@@ -55,6 +63,10 @@ class PostiWarehouseMetabox {
                 wp_die('', '', 200);
             }
         }
+        $this->error = __('Unexpected error. Please try again','posti_wh');
+        $post = get_post($_POST['post_id']);
+        $this->add_order_meta_box_html($post);
+        wp_die('', '', 200);
     }
 
 }
