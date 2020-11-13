@@ -372,6 +372,7 @@ class PostiWarehouse {
                     'label' => __('Wholesale price', 'textdomain'),
                     'placeholder' => '',
                     'desc_tip' => 'true',
+                    'type' => 'number',
                     'description' => __('Enter wholesale price', 'textdomain')
                 )
         );
@@ -516,9 +517,12 @@ class PostiWarehouse {
             $products = array();
             $products_ids = array();
             $_product = wc_get_product($post_id);
+            if (!$_product->get_sku()){
+                return false;
+            }
             $type = $_product->get_type();
             $ean = get_post_meta($post_id, '_ean', true);
-            $wholesale_price = (float)get_post_meta($post_id, '_wholesale_price', true);
+            $wholesale_price = (float)str_ireplace(',','.',get_post_meta($post_id, '_wholesale_price', true));
             if (!$wholesale_price){
                 $wholesale_price = (float) $_product->get_price();
             }
