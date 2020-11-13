@@ -124,7 +124,6 @@ class PostiOrder {
             }
         }
         foreach ($items as $item_id => $item) {
-            echo $item['product_id'];
             $type = get_post_meta($item['product_id'], '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($item['product_id'], '_posti_wh_warehouse', true);
             if (($type == "Posti" || $type == "Store") && $product_warehouse) {
