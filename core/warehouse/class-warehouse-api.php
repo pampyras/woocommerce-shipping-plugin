@@ -24,7 +24,7 @@ class PostiWarehouseApi {
         if ($this->test) {
             return "https://argon.api.posti.fi/ecommerce/v3/";
         }
-        return "https://api.posti.fi/";
+        return "https://api.posti.fi/ecommerce/v3/";
     }
 
     public function getBusinessId() {
