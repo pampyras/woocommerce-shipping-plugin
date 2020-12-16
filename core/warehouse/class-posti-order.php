@@ -278,7 +278,7 @@ class PostiOrder {
                 if ($point['pupCode'] === $id) {
                     return array(
                         "externalId" => $business_id . "-" . $_order->get_customer_id(),
-                        "name" => $point['publicName']['en'],
+                        "name" => $_order->get_shipping_first_name() . ' ' . $_order->get_shipping_last_name().' c/o '.$point['publicName']['en'],
                         "streetAddress" => $point['address']['en']['address'],
                         "postalCode" => $point['postalCode'],
                         "postOffice" => $point['address']['en']['postalCodeName'],
