@@ -37,7 +37,7 @@ if ( ! class_exists(__NAMESPACE__ . '\Admin') ) {
     public function load() {
       add_action('current_screen', array( $this, 'maybe_show_notices' ));
       add_filter('plugin_action_links_' . $this->core->basename, array( $this, 'add_settings_link' ));
-      add_filter('plugin_row_meta', array( $this, 'plugin_row_meta' ), 10, 2);
+      //add_filter('plugin_row_meta', array( $this, 'plugin_row_meta' ), 10, 2);
       add_filter('bulk_actions-edit-shop_order', array( $this, 'register_multi_create_orders' ));
       add_action('woocommerce_admin_order_actions_end', array( $this, 'register_quick_create_order' ), 10, 2); //to add print option at the end of each orders in orders page
       add_action('admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ));

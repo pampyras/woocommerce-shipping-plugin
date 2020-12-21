@@ -15,9 +15,12 @@ class PostiWarehouseApi {
             $this->test = true;
         }
         $this->debug = $debug;
-        $options = get_option('posti_wh_options');
-        $this->username = $options['posti_wh_field_username'];
-        $this->password = $options['posti_wh_field_password'];
+        //$options = get_option('posti_wh_options');
+        //$this->username = $options['posti_wh_field_username'];
+        //$this->password = $options['posti_wh_field_password'];
+        $options = get_option('woocommerce_posti_shipping_method_settings');
+        $this->username = $options['account_number'];
+        $this->password = $options['secret_key'];
     }
 
     private function getApiUrl() {

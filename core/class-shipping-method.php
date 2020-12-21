@@ -612,6 +612,49 @@ if ( ! class_exists(__NAMESPACE__ . '\Shipping_Method') ) {
             'yes'  => __('Yes'),
           ),
         ),
+        array(
+          'title' => $this->get_core()->text->warehouse_settings(),
+          'type'  => 'title',
+        ),
+        'posti_wh_field_business_id' => array(
+          'title'   => __('Business ID', 'woo-pakettikauppa'),
+          'type'    => 'text',
+          'default' => '',
+        ),
+        'posti_wh_field_contract' => array(
+          'title'   => __('Contract number', 'woo-pakettikauppa'),
+          'type'    => 'text',
+          'default' => '',
+        ),
+        'posti_wh_field_type' => array(
+          'title'   => __('Default stock type', 'woo-pakettikauppa'),
+          'type'    => 'select',
+          'default' => 'no',
+          'options' => array(
+                'Store' => __('Store', 'woo-pakettikauppa'),
+                'Posti' => __('Posti Warehouse', 'woo-pakettikauppa'),
+          ),
+        ),
+        'posti_wh_field_autoorder'      => array(
+          'title'   => __('Auto ordering', 'woo-pakettikauppa'),
+          'type'    => 'checkbox',
+          'default' => 'no',
+        ),
+        'posti_wh_field_autocomplete'      => array(
+          'title'   => __('Auto mark orders as "Completed"', 'woo-pakettikauppa'),
+          'type'    => 'checkbox',
+          'default' => 'no',
+        ),
+        'posti_wh_field_test_mode'      => array(
+          'title'   => __('Test mode', 'woo-pakettikauppa'),
+          'type'    => 'checkbox',
+          'default' => 'yes',
+        ),
+        'posti_wh_field_debug'      => array(
+          'title'   => __('Debug mode', 'woo-pakettikauppa'),
+          'type'    => 'checkbox',
+          'default' => 'no',
+        ),
       );
     }
 

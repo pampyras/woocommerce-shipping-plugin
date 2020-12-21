@@ -11,13 +11,14 @@ class PostiWarehouse {
 
     public function __construct() {
 
-        $options = get_option('posti_wh_options');
+        //$options = get_option('posti_wh_options');
+        $options = get_option('woocommerce_posti_shipping_method_settings');
         $is_test = false;
         $debug = false;
-        if (isset($options['posti_wh_field_test_mode'])) {
+        if (isset($options['posti_wh_field_test_mode']) && $options['posti_wh_field_test_mode'] == "yes") {
             $is_test = true;
         }
-        if (isset($options['posti_wh_field_debug'])) {
+        if (isset($options['posti_wh_field_debug']) && $options['posti_wh_field_debug'] == "yes") {
             $debug = true;
         }
         if (isset($options['posti_wh_field_business_id'])) {
@@ -43,7 +44,7 @@ class PostiWarehouse {
 
 
 
-        add_action('admin_menu', array($this, 'posti_wh_options_page'));
+       // add_action('admin_menu', array($this, 'posti_wh_options_page'));
 
         if ($debug) {
             add_action('admin_menu', array($this, 'posti_wh_debug_page'));
@@ -233,7 +234,8 @@ class PostiWarehouse {
     }
 
     public function posti_wh_field_checkbox_cb($args) {
-        $options = get_option('posti_wh_options');
+        //$options = get_option('posti_wh_options');
+        $options = get_option('woocommerce_posti_shipping_method_settings');
         $checked = "";
         if ($options[$args['label_for']]) {
             $checked = ' checked="checked" ';
@@ -244,7 +246,8 @@ class PostiWarehouse {
     }
 
     public function posti_wh_field_string_cb($args) {
-        $options = get_option('posti_wh_options');
+        //$options = get_option('posti_wh_options');
+        $options = get_option('woocommerce_posti_shipping_method_settings');
         $value = $options[$args['label_for']];
         if (!$value && isset($args['default'])) {
             $value = $args['default'];
@@ -256,7 +259,8 @@ class PostiWarehouse {
 
     public function posti_wh_field_type_cb($args) {
 
-        $options = get_option('posti_wh_options');
+        //$options = get_option('posti_wh_options');
+        $options = get_option('woocommerce_posti_shipping_method_settings');
         ?>
         <select id="<?php echo esc_attr($args['label_for']); ?>"
                 data-custom="<?php echo esc_attr($args['posti_wh_custom_data']); ?>"
@@ -445,7 +449,8 @@ class PostiWarehouse {
             $type = get_post_meta($post->ID, '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($post->ID, '_posti_wh_warehouse', true);
             if (!$type) {
-                $options = get_option('posti_wh_options');
+                //$options = get_option('posti_wh_options');
+                $options = get_option('woocommerce_posti_shipping_method_settings');
                 if (isset($options['posti_wh_field_type'])) {
                     $type = $options['posti_wh_field_type'];
                 }
@@ -506,7 +511,8 @@ class PostiWarehouse {
         $product_warehouse = get_post_meta($post_id, '_posti_wh_warehouse', true);
         $product_distributor = get_post_meta($post_id, '_posti_wh_distribution', true);
         if (($type == "Posti" || $type == "Store") && $product_warehouse) {
-            $options = get_option('posti_wh_options');
+            //$options = get_option('posti_wh_options');
+            $options = get_option('woocommerce_posti_shipping_method_settings');
             $business_id = false;
             if (isset($options['posti_wh_field_business_id'])) {
                 $business_id = $options['posti_wh_field_business_id'];
@@ -607,7 +613,8 @@ class PostiWarehouse {
     private function syncProducts($ids) {
         foreach ($ids as $id) {
             $_product = wc_get_product($id);
-            $options = get_option('posti_wh_options');
+            //$options = get_option('posti_wh_options');
+            $options = get_option('woocommerce_posti_shipping_method_settings');
             $business_id = false;
             if (isset($options['posti_wh_field_business_id'])) {
                 $business_id = $options['posti_wh_field_business_id'];
@@ -685,7 +692,8 @@ class PostiWarehouse {
     public function posti_check_order($order_id, $old_status, $new_status) {
         $posti_order = false;
         if ($new_status == "processing") {
-            $options = get_option('posti_wh_options');
+            //$options = get_option('posti_wh_options');
+            $options = get_option('woocommerce_posti_shipping_method_settings');
             if (isset($options['posti_wh_field_autoorder'])) {
 //if autoorder on, check if order has posti products
                 $order = wc_get_order($order_id);

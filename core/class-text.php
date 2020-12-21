@@ -404,6 +404,10 @@ if ( ! class_exists(__NAMESPACE__ . '\Text') ) {
     public function advanced_settings() {
       return __('Advanced settings', 'woo-pakettikauppa');
     }
+    
+    public function warehouse_settings() {
+      return __('Warehouse settings', 'woo-pakettikauppa');
+    }
 
     public function show_shipping_method() {
       return __('Show Pakettikauppa shipping method', 'woo-pakettikauppa');

@@ -63,7 +63,8 @@ class PostiOrder {
     }
 
     public function updatePostiOrders() {
-        $options = get_option('posti_wh_options');
+        //$options = get_option('posti_wh_options');
+        $options = get_option('woocommerce_posti_shipping_method_settings');
         $args = array(
             'post_type' => 'shop_order',
             'post_status' => 'wc-processing',
