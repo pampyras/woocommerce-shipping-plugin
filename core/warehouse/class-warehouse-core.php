@@ -28,7 +28,8 @@ class PostiWarehouse {
         $this->store_types = array(
             'Store' => __('Store', 'woo-pakettikauppa'),
             'Posti' => __('Posti Warehouse', 'woo-pakettikauppa'),
-                //'Catalog' => __('Drop Shipping', 'woo-pakettikauppa')
+            'Not_in_stock' => __('Not in stock', 'woo-pakettikauppa'),
+            'Catalog' => __('Dropshipping', 'woo-pakettikauppa'),
         );
 
         $this->api = new PostiWarehouseApi($this->business_id, $is_test, $debug);
@@ -103,14 +104,14 @@ class PostiWarehouse {
 
         add_settings_section(
                 'posti_wh_settings_section',
-                __('Main settings', 'posti_wh'),
+                __('Main settings', 'woo-pakettikauppa'),
                 array($this, 'posti_wh_section_developers_cb'),
                 'posti_wh'
         );
 
         add_settings_field(
                 'posti_wh_field_username',
-                __('Username', 'posti_wh'),
+                __('Username', 'woo-pakettikauppa'),
                 array($this, 'posti_wh_field_string_cb'),
                 'posti_wh',
                 'posti_wh_settings_section',
@@ -123,7 +124,7 @@ class PostiWarehouse {
 
         add_settings_field(
                 'posti_wh_field_password',
-                __('Password', 'posti_wh'),
+                __('Password', 'woo-pakettikauppa'),
                 array($this, 'posti_wh_field_string_cb'),
                 'posti_wh',
                 'posti_wh_settings_section',
@@ -136,7 +137,7 @@ class PostiWarehouse {
 
         add_settings_field(
                 'posti_wh_field_business_id',
-                __('Business id', 'posti_wh'),
+                __('Business ID', 'woo-pakettikauppa'),
                 array($this, 'posti_wh_field_string_cb'),
                 'posti_wh',
                 'posti_wh_settings_section',
@@ -150,7 +151,7 @@ class PostiWarehouse {
 
         add_settings_field(
                 'posti_wh_field_contract',
-                __('Contract number', 'posti_wh'),
+                __('Contract number', 'woo-pakettikauppa'),
                 array($this, 'posti_wh_field_string_cb'),
                 'posti_wh',
                 'posti_wh_settings_section',
@@ -165,7 +166,7 @@ class PostiWarehouse {
 
         add_settings_field(
                 'posti_wh_field_type',
-                __('Default stock type', 'posti_wh'),
+                __('Default stock type', 'woo-pakettikauppa'),
                 array($this, 'posti_wh_field_type_cb'),
                 'posti_wh',
                 'posti_wh_settings_section',
@@ -178,7 +179,7 @@ class PostiWarehouse {
 
         add_settings_field(
                 'posti_wh_field_autoorder',
-                __('Auto ordering', 'posti_wh'),
+                __('Auto ordering', 'woo-pakettikauppa'),
                 array($this, 'posti_wh_field_checkbox_cb'),
                 'posti_wh',
                 'posti_wh_settings_section',
@@ -191,7 +192,7 @@ class PostiWarehouse {
 
         add_settings_field(
                 'posti_wh_field_autocomplete',
-                __('Auto mark orders as "Completed"', 'posti_wh'),
+                __('Auto mark orders as "Completed"', 'woo-pakettikauppa'),
                 array($this, 'posti_wh_field_checkbox_cb'),
                 'posti_wh',
                 'posti_wh_settings_section',
@@ -204,7 +205,7 @@ class PostiWarehouse {
 
         add_settings_field(
                 'posti_wh_field_test_mode',
-                __('Test mode', 'posti_wh'),
+                __('Test mode', 'woo-pakettikauppa'),
                 array($this, 'posti_wh_field_checkbox_cb'),
                 'posti_wh',
                 'posti_wh_settings_section',
@@ -217,7 +218,7 @@ class PostiWarehouse {
 
         add_settings_field(
                 'posti_wh_field_debug',
-                __('Debug', 'posti_wh'),
+                __('Debug', 'woo-pakettikauppa'),
                 array($this, 'posti_wh_field_checkbox_cb'),
                 'posti_wh',
                 'posti_wh_settings_section',
@@ -510,7 +511,8 @@ class PostiWarehouse {
         $type = get_post_meta($post_id, '_posti_wh_stock_type', true);
         $product_warehouse = get_post_meta($post_id, '_posti_wh_warehouse', true);
         $product_distributor = get_post_meta($post_id, '_posti_wh_distribution', true);
-        if (($type == "Posti" || $type == "Store") && $product_warehouse) {
+        
+        if (($type == "Posti" || $type == "Store" || $type == "Catalog") && $product_warehouse) {
             //$options = get_option('posti_wh_options');
             $options = get_option('woocommerce_posti_shipping_method_settings');
             $business_id = false;
@@ -597,6 +599,9 @@ class PostiWarehouse {
             $id = $post->ID;
             $type = get_post_meta($post->ID, '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($post->ID, '_posti_wh_warehouse', true);
+            if ($type == "Not_in_stock"){
+                return;
+            }
             $last_sync = get_post_meta($post->ID, '_posti_last_sync', true);
             if ($type && !$product_warehouse) {
                 $class = 'notice notice-error';
@@ -623,7 +628,10 @@ class PostiWarehouse {
                 return;
             }
             $product_reference = $business_id . '-' . $_product->get_sku();
-//$product_warehouse = get_post_meta($post_id, '_posti_wh_warehouse', true);
+            $stock_type = get_post_meta($id, '_posti_wh_stock_type', true);
+            if ($stock_type == "Not_in_stock"){
+                return;
+            }
             $product_data = $this->api->getProduct($product_reference);
             if (is_array($product_data)) {
                 if (isset($product_data['balances']) && is_array($product_data['balances'])) {
@@ -736,7 +744,7 @@ class PostiWarehouse {
         foreach ($columns as $key => $name) {
             $new_columns[$key] = $name;
             if ('order_status' === $key) {
-                $new_columns['posti_api_tracking'] = __('Posti API Tracking', 'posti_wh');
+                $new_columns['posti_api_tracking'] = __('Posti API Tracking', 'woo-pakettikauppa');
             }
         }
         return $new_columns;

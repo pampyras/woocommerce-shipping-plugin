@@ -63,7 +63,7 @@ class PostiWarehouseMetabox {
                 wp_die('', '', 200);
             }
         }
-        $this->error = __('Unexpected error. Please try again','posti_wh');
+        $this->error = __('Unexpected error. Please try again','woo-pakettikauppa');
         $post = get_post($_POST['post_id']);
         $this->add_order_meta_box_html($post);
         wp_die('', '', 200);

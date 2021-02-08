@@ -633,6 +633,8 @@ if ( ! class_exists(__NAMESPACE__ . '\Shipping_Method') ) {
           'options' => array(
                 'Store' => __('Store', 'woo-pakettikauppa'),
                 'Posti' => __('Posti Warehouse', 'woo-pakettikauppa'),
+                'Not_in_stock' => __('Not in stock', 'woo-pakettikauppa'),
+                'Dropshipping' => __('Dropshipping', 'woo-pakettikauppa'),
           ),
         ),
         'posti_wh_field_autoorder'      => array(

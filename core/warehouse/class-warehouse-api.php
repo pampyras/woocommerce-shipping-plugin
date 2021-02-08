@@ -70,10 +70,13 @@ class PostiWarehouseApi {
     private function ApiCall($url, $data = '', $action = 'GET') {
         if (!$this->token) {
             $token_data = get_option('posti_wh_api_auth');
-            if ($token_data['expires'] < time()) {
+            if (isset($token_data['expires']) && $token_data['expires'] < time()) {
                 $this->getToken();
-            } else {
+            } elseif (isset($token_data['token'])) {
                 $this->token = $token_data['token'];
+            } else {
+                $this->log("Failed to get token");
+                return false;
             }
         }
         $curl = curl_init();
