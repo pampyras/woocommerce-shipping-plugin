@@ -6,7 +6,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woo-"
 "pakettikauppa\n"
 "POT-Creation-Date: 2021-02-08 09:10+0000\n"
-"PO-Revision-Date: 2021-02-08 09:10+0000\n"
+"PO-Revision-Date: 2021-02-10 08:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: Finnish\n"
 "Language: fi\n"
@@ -16,7 +16,7 @@ msgstr ""
 "X-Generator: Loco https://localise.biz/\n"
 "X-Domain: woo-pakettikauppa\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Loco-Version: 2.4.3; wp-5.5.3"
+"X-Loco-Version: 2.5.0; wp-5.5.3"
 
 #: core/class-admin.php:93 core/class-admin.php:116
 msgid ""
@@ -328,56 +328,56 @@ msgstr "WooCommerce Pakettikauppa: seurantakoodin luonti epäonnistui: %s"
 
 #: core/class-shipping-method.php:620
 msgid "Business ID"
-msgstr ""
+msgstr "Y-tunnus"
 
 #: core/class-shipping-method.php:625
 #: core/warehouse/class-warehouse-core.php:154
 msgid "Contract number"
-msgstr ""
+msgstr "Sopimusnumero"
 
 #: core/class-shipping-method.php:630
 #: core/warehouse/class-warehouse-core.php:169
 msgid "Default stock type"
-msgstr ""
+msgstr "Oletus varastointityyppi"
 
 #: core/class-shipping-method.php:634
 #: core/warehouse/class-warehouse-core.php:29
 msgid "Store"
-msgstr ""
+msgstr "Myymälä"
 
 #: core/class-shipping-method.php:635
 #: core/warehouse/class-warehouse-core.php:30
 msgid "Posti Warehouse"
-msgstr ""
+msgstr "Postin varastopalvelu"
 
 #: core/class-shipping-method.php:636
 #: core/warehouse/class-warehouse-core.php:31
 msgid "Not in stock"
-msgstr ""
+msgstr "Ei varastossa"
 
 #: core/class-shipping-method.php:637
 #: core/warehouse/class-warehouse-core.php:32
 msgid "Dropshipping"
-msgstr ""
+msgstr "Suoratoimitus"
 
 #: core/class-shipping-method.php:641
 #: core/warehouse/class-warehouse-core.php:182
 msgid "Auto ordering"
-msgstr ""
+msgstr "Automaattinen tilaus"
 
 #: core/class-shipping-method.php:646
 #: core/warehouse/class-warehouse-core.php:195
 msgid "Auto mark orders as \"Completed\""
-msgstr ""
+msgstr "Aseta tilaus automaattisesti “Toimitettu”-tilaan"
 
 #: core/class-shipping-method.php:651
 #: core/warehouse/class-warehouse-core.php:208
 msgid "Test mode"
-msgstr ""
+msgstr "Testitila"
 
 #: core/class-shipping-method.php:656
 msgid "Debug mode"
-msgstr ""
+msgstr "Vian etsintä -tila"
 
 #: core/class-text.php:26
 msgid "WooCommerce Pakettikauppa &rsaquo; Setup Wizard"
@@ -760,7 +760,7 @@ msgstr "Kehittyneet ominaisuudet"
 
 #: core/class-text.php:409
 msgid "Warehouse settings"
-msgstr ""
+msgstr "Varaston asetukset"
 
 #: core/class-text.php:413
 msgid "Show Pakettikauppa shipping method"
@@ -817,61 +817,63 @@ msgstr ""
 
 #: core/warehouse/class-posti-order.php:24
 msgid "Place Order"
-msgstr ""
+msgstr "Tee tilaus"
 
 #: core/warehouse/class-warehouse-core.php:107
 msgid "Main settings"
-msgstr ""
+msgstr "Pääasetukset"
 
 #: core/warehouse/class-warehouse-core.php:114
 msgid "Username"
-msgstr ""
+msgstr "Käyttäjän nimi"
 
 #: core/warehouse/class-warehouse-core.php:127
 msgid "Password"
-msgstr ""
+msgstr "Salasana"
 
 #: core/warehouse/class-warehouse-core.php:140
 msgid "Business id"
-msgstr ""
+msgstr "Y-tunnus"
 
 #: core/warehouse/class-warehouse-core.php:221
 msgid "Debug"
-msgstr ""
+msgstr "Vian etsintä"
 
 #: core/warehouse/class-warehouse-core.php:472
 msgid "Stock type"
-msgstr ""
+msgstr "Varastointimalli"
 
 #: core/warehouse/class-warehouse-core.php:481
 msgid "Warehouse"
-msgstr ""
+msgstr "Varasto "
 
 #: core/warehouse/class-warehouse-core.php:490
 msgid "Distributor ID"
-msgstr ""
+msgstr "Toimittajan tunnus"
 
 #: core/warehouse/class-warehouse-core.php:608
 msgid "Posti error: Please select Posti warehouse."
-msgstr ""
+msgstr "Posti virhe: Valitse Postin varasto"
 
 #: core/warehouse/class-warehouse-core.php:612
 msgid ""
 "Posti error: product sync not active. Please check product SKU, price or try "
 "resave."
 msgstr ""
+"Posti virhe: tuotteen synkronointi ei ole aktiivinen. Tarkasta tuotteen SKU, "
+"hinta tai yritä tallentaa uudelleen."
 
 #: core/warehouse/class-warehouse-core.php:747
 msgid "Posti API Tracking"
-msgstr ""
+msgstr "Posti API Tacking"
 
 #: core/warehouse/class-warehouse-metabox.php:35
 msgid "Order status"
-msgstr ""
+msgstr "Tilauksen tila"
 
 #: core/warehouse/class-warehouse-metabox.php:66
 msgid "Unexpected error. Please try again"
-msgstr ""
+msgstr "Odottamaton virhe. Yritä uudelleen."
 
 #: posti_shipping/classes/class-text.php:40
 msgid "WooCommerce Posti requires WooCommerce to be installed and activated!"
