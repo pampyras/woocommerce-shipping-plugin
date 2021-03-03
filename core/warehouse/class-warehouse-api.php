@@ -1,5 +1,7 @@
 <?php
 
+use Pakettikauppa\Client;
+
 class PostiWarehouseApi {
 
     private $username = null;
@@ -14,6 +16,7 @@ class PostiWarehouseApi {
         if ($test) {
             $this->test = true;
         }
+        
         $this->debug = $debug;
         //$options = get_option('posti_wh_options');
         //$this->username = $options['posti_wh_field_username'];
@@ -36,41 +39,61 @@ class PostiWarehouseApi {
 
     private function getAuthUrl() {
         if ($this->test) {
-            return "https://oauth2.barium.posti.com/";
+            return "https://oauth2.barium.posti.com";
         }
-        return "https://oauth2.posti.com/";
+        return "https://oauth2.posti.com";
     }
 
     public function getToken() {
-        $curl = curl_init();
-        $accesstoken = base64_encode($this->username . ":" . $this->password);
-        $header = array();
-        $header[] = 'Accept: application/json';
-        $header[] = 'Authorization: Basic ' . $accesstoken;
+        /*
+          $curl = curl_init();
+          $accesstoken = base64_encode($this->username . ":" . $this->password);
+          $header = array();
+          $header[] = 'Accept: application/json';
+          $header[] = 'Authorization: Basic ' . $accesstoken;
 
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($curl, CURLOPT_POST, 1);
-//curl_setopt($curl, CURLOPT_POSTFIELDS, $auth_data);
-        curl_setopt($curl, CURLOPT_URL, $this->getAuthUrl() . 'oauth/token?grant_type=client_credentials');
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-        $result = curl_exec($curl);
-        if (!$result) {
-            return false;
+          curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+          curl_setopt($curl, CURLOPT_POST, 1);
+          //curl_setopt($curl, CURLOPT_POSTFIELDS, $auth_data);
+          curl_setopt($curl, CURLOPT_URL, $this->getAuthUrl() . 'oauth/token?grant_type=client_credentials');
+          curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+          curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+          $result = curl_exec($curl);
+          if (!$result) {
+          return false;
+          }
+          curl_close($curl);
+          $data = json_decode($result);
+          $token = $data->access_token;
+          $expires = time() + $data->expires_in;
+          update_option('posti_wh_api_auth', array($token, $expires));
+          $this->token = $token;
+          return $token;
+         * 
+         */
+        $config = array(
+            'api_key' => $this->username,
+            'secret' => $this->password,
+            'use_posti_auth' => true,
+            'posti_auth_url' => $this->getAuthUrl()
+        );
+
+        $client = new \Pakettikauppa\Client($config);
+
+        $token_data = $client->getToken();
+        if (isset($token_data->access_token)) {
+            update_option('posti_wh_api_auth', array('token' => $token_data->access_token, 'expires' => $token_data->expires_in - 100));
+            $this->token = $token_data->access_token;
+            $this->log("Refreshed access token");
+            return $token_data->access_token;
         }
-        curl_close($curl);
-        $data = json_decode($result);
-        $token = $data->access_token;
-        $expires = time() + $data->expires_in;
-        update_option('posti_wh_api_auth', array($token, $expires));
-        $this->token = $token;
-        return $token;
+        return false;
     }
 
     private function ApiCall($url, $data = '', $action = 'GET') {
         if (!$this->token) {
             $token_data = get_option('posti_wh_api_auth');
-            if (isset($token_data['expires']) && $token_data['expires'] < time()) {
+            if (!$token_data || isset($token_data['expires']) && $token_data['expires'] < time()) {
                 $this->getToken();
             } elseif (isset($token_data['token'])) {
                 $this->token = $token_data['token'];
@@ -112,7 +135,7 @@ class PostiWarehouseApi {
 //var_dump($result); exit;
 
         if (!$result) {
-            $this->log($http_status . ' - response from ' . $url . ': '.$result );
+            $this->log($http_status . ' - response from ' . $url . ': ' . $result);
             return false;
         }
 

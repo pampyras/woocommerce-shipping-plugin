@@ -647,11 +647,13 @@ if ( ! class_exists(__NAMESPACE__ . '\Shipping_Method') ) {
           'type'    => 'checkbox',
           'default' => 'no',
         ),
+          /*
         'posti_wh_field_test_mode'      => array(
           'title'   => __('Test mode', 'woo-pakettikauppa'),
           'type'    => 'checkbox',
           'default' => 'yes',
         ),
+           */
         'posti_wh_field_debug'      => array(
           'title'   => __('Debug mode', 'woo-pakettikauppa'),
           'type'    => 'checkbox',

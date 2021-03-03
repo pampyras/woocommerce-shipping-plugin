@@ -15,9 +15,14 @@ class PostiWarehouse {
         $options = get_option('woocommerce_posti_shipping_method_settings');
         $is_test = false;
         $debug = false;
+        if (isset($options['mode']) && $options['mode'] == "test") {
+            $is_test = true;
+        }
+        /*
         if (isset($options['posti_wh_field_test_mode']) && $options['posti_wh_field_test_mode'] == "yes") {
             $is_test = true;
         }
+         */
         if (isset($options['posti_wh_field_debug']) && $options['posti_wh_field_debug'] == "yes") {
             $debug = true;
         }
@@ -721,7 +726,7 @@ class PostiWarehouse {
         foreach ($items as $item => $values) {
             $type = get_post_meta($values['data']->get_id(), '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($values['data']->get_id(), '_posti_wh_warehouse', true);
-            if (($type == "Posti" || $type == "Store") && $product_warehouse) {
+            if (($type == "Posti" ) && $product_warehouse) { //|| $type == "Store"
                 $hide_other = true;
                 break;
             }
