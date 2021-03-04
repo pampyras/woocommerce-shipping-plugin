@@ -75,7 +75,8 @@ class PostiWarehouseApi {
             'api_key' => $this->username,
             'secret' => $this->password,
             'use_posti_auth' => true,
-            'posti_auth_url' => $this->getAuthUrl()
+            'posti_auth_url' => $this->getAuthUrl(),
+            'base_uri' => $this->getApiUrl(),
         );
 
         $client = new \Pakettikauppa\Client($config);
@@ -87,7 +88,7 @@ class PostiWarehouseApi {
             $this->log("Refreshed access token");
             return $token_data->access_token;
         } else {
-            $this->log("Failed to get token from api");
+            $this->log("Failed to get token from api: ".json_encode($config).', reponse '.json_encode($token_data));
         }
         return false;
     }
