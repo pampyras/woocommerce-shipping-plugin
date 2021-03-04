@@ -86,6 +86,8 @@ class PostiWarehouseApi {
             $this->token = $token_data->access_token;
             $this->log("Refreshed access token");
             return $token_data->access_token;
+        } else {
+            $this->log("Failed to get token from api");
         }
         return false;
     }
