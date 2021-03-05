@@ -135,7 +135,7 @@ class PostiOrder {
                 $_product = wc_get_product($item['product_id']);
                 $ean = get_post_meta($item['product_id'], '_ean', true);
                 $order_items[] = [
-                    "externalId" => $item_counter,
+                    "externalId" => (string)$item_counter,
                     "externalProductId" => $business_id . '-' . $_product->get_sku(),
                     "productEANCode" => $ean, //$_product->get_sku(),
                     "productUnitOfMeasure" => "KPL",
