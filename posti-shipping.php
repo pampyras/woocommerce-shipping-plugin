@@ -158,9 +158,9 @@ $instance = new Woo_Posti_Shipping(
  	'posti_auth_url' => 'https://oauth.posti.com',
       ],
       'test' => [
-	'base_uri' => 'https://argon.api.posti.fi/ecommerce/v3/',
-	'use_posti_auth' => true,
- 	'posti_auth_url' => 'https://oauth2.barium.posti.com',
+	//'base_uri' => 'https://argon.api.posti.fi/ecommerce/v3/',
+	//'use_posti_auth' => true,
+ 	//'posti_auth_url' => 'https://oauth2.barium.posti.com',
       ], 
     ], // Overrides defaults and UI settings
     // 'pakettikauppa_api_comment' => 'From WooCommerce', // Overrides default

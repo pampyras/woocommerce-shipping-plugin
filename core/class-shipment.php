@@ -442,8 +442,11 @@ if ( ! class_exists(__NAMESPACE__ . '\Shipment') ) {
         ),
         $this->core->api_config[$mode]
       );
-
-      $this->client = new \Pakettikauppa\Client($configs, $mode);
+      if ($mode == "test"){
+          $this->client = new \Pakettikauppa\Client([], "test_mode");
+      } else {
+        $this->client = new \Pakettikauppa\Client($configs, $mode);
+      }
       $this->client->setComment($this->core->api_comment);
 
       if ( $configs[$mode]['use_posti_auth'] ) {
