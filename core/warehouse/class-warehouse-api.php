@@ -71,15 +71,16 @@ class PostiWarehouseApi {
           return $token;
          * 
          */
-        $config = array(
-            'api_key' => $this->username,
-            'secret' => $this->password,
-            'use_posti_auth' => true,
-            'posti_auth_url' => $this->getAuthUrl(),
-            'base_uri' => $this->getApiUrl(),
+        $config = array('wh' => [
+                'api_key' => $this->username,
+                'secret' => $this->password,
+                'use_posti_auth' => true,
+                'posti_auth_url' => $this->getAuthUrl(),
+                'base_uri' => $this->getApiUrl(),
+            ]
         );
 
-        $client = new \Pakettikauppa\Client($config);
+        $client = new \Pakettikauppa\Client($config, 'wh');
 
         $token_data = $client->getToken();
         if (isset($token_data->access_token)) {
@@ -234,7 +235,7 @@ class PostiWarehouseApi {
                 $debug = array();
             }
             $debug[] = date('Y-m-d H:i:s') . ': ' . $msg;
-            while (count($debug) > 20) {
+            while (is_array($debug) && count($debug) > 20) {
                 $debug = array_shift($debug);
             }
 

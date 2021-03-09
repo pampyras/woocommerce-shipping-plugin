@@ -1,6 +1,7 @@
 <?php
 defined('ABSPATH') || exit;
 
+
 class PostiOrder {
 
     private $orderStatus = false;
@@ -104,7 +105,92 @@ class PostiOrder {
         }
     }
 
+    private function get_additional_services($order) {
+        $additional_services = array();
+
+        $settings = get_option('woocommerce_posti_shipping_method_settings');
+
+        $shipping_methods = $order->get_shipping_methods();
+
+        $chosen_shipping_method = array_pop($shipping_methods);
+
+        $add_cod_to_additional_services = 'cod' === $order->get_payment_method();
+        
+        if (!empty($chosen_shipping_method)) {
+            $method_id = $chosen_shipping_method->get_method_id();
+
+            if ($method_id === 'local_pickup') {
+                return $additional_services;
+            }
+
+            $instance_id = $chosen_shipping_method->get_instance_id();
+            
+            $pickup_points = json_decode($settings['pickup_points'], true);
+            //var_dump($pickup_points);
+            if (!empty($pickup_points[$instance_id]['service'])) {
+                $service_id = $pickup_points[$instance_id]['service'];
+
+                $services = array();
+
+                if (!empty($pickup_points[$instance_id][$service_id]) && isset($pickup_points[$instance_id][$service_id]['additional_services'])) {
+                    $services = $pickup_points[$instance_id][$service_id]['additional_services'];
+                }
+
+                if (!empty($services)) {
+                    foreach ($services as $service_code => $service) {
+                        if ($service === 'yes' && $service_code !== '3101') {
+                            $additional_services[] = array($service_code => null);
+                        } elseif ($service === 'yes' && $service_code === '3101') {
+                            $add_cod_to_additional_services = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($add_cod_to_additional_services) {
+            $additional_services[] = array(
+                '3101' => array(
+                    'amount' => $order->get_total(),
+                    'account' => $settings['cod_iban'],
+                    'codbic' => $settings['cod_bic'],
+                    'reference' => $this->calculate_reference($order->get_id()),
+                ),
+            );
+        }
+
+        return $additional_services;
+    }
+    
+    public static function calculate_reference( $id ) {
+      $weights = array( 7, 3, 1 );
+      $sum     = 0;
+
+      $base                 = str_split(strval(($id)));
+      $reversed_base        = array_reverse($base);
+      $reversed_base_length = count($reversed_base);
+
+      for ( $i = 0; $i < $reversed_base_length; $i ++ ) {
+        $sum += $reversed_base[ $i ] * $weights[ $i % 3 ];
+      }
+
+      $checksum = (10 - $sum % 10) % 10;
+
+      $reference = implode('', $base) . $checksum;
+
+      return $reference;
+    }
+
     private function prepare_posti_order($_order) {
+        
+        $additional_services = $this->get_additional_services($_order);
+        //var_dump($additional_services); exit;
+        $additional_services = [
+            [
+                "serviceCode" => "3174"
+            ]
+        ];
+
         $business_id = $this->api->getBusinessId();
         $order_items = array();
         $total_price = 0;
@@ -128,14 +214,14 @@ class PostiOrder {
             $type = get_post_meta($item['product_id'], '_posti_wh_stock_type', true);
             $product_warehouse = get_post_meta($item['product_id'], '_posti_wh_warehouse', true);
             if (($type == "Posti" || $type == "Store") && $product_warehouse) {
-                
+
 
                 $total_price += $item->get_total();
                 $total_tax += $item->get_subtotal_tax();
                 $_product = wc_get_product($item['product_id']);
                 $ean = get_post_meta($item['product_id'], '_ean', true);
                 $order_items[] = [
-                    "externalId" => (string)$item_counter,
+                    "externalId" => (string) $item_counter,
                     "externalProductId" => $business_id . '-' . $_product->get_sku(),
                     "productEANCode" => $ean, //$_product->get_sku(),
                     "productUnitOfMeasure" => "KPL",
@@ -267,7 +353,10 @@ class PostiOrder {
                 $order['deliveryAddress'] = $address;
             }
         }
-
+        if ($additional_services){
+            $order['additionalServices'] = $additional_services;
+        }
+        
         return $order;
     }
 
@@ -279,7 +368,7 @@ class PostiOrder {
                 if ($point['pupCode'] === $id) {
                     return array(
                         "externalId" => $business_id . "-" . $_order->get_customer_id(),
-                        "name" => $_order->get_shipping_first_name() . ' ' . $_order->get_shipping_last_name().' c/o '.$point['publicName']['en'],
+                        "name" => $_order->get_shipping_first_name() . ' ' . $_order->get_shipping_last_name() . ' c/o ' . $point['publicName']['en'],
                         "streetAddress" => $point['address']['en']['address'],
                         "postalCode" => $point['postalCode'],
                         "postOffice" => $point['address']['en']['postalCodeName'],
